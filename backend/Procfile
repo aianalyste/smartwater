@@ -1,0 +1,1 @@
+web: gunicorn smartwater_backend.wsgi --log-file -

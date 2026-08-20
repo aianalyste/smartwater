@@ -1,0 +1,83 @@
+"""
+Recuperation des previsions meteo via Open-Meteo (gratuit, sans cle API).
+
+Documentation officielle : https://open-meteo.com/en/docs
+"""
+
+import requests
+from datetime import datetime, timedelta
+
+
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+
+
+def get_previsions_pluie(latitude, longitude, heures=24):
+    """
+    Recupere les previsions de pluie heure par heure pour une position
+    donnee, sur les prochaines `heures` heures.
+
+    Retourne une liste de dicts :
+        [{'heure': datetime, 'pluie_mm': float, 'probabilite_pct': int}, ...]
+
+    Si latitude/longitude ne sont pas encore renseignes pour la parcelle
+    (voir Parcelle.latitude/longitude dans models.py), utilise par
+    defaut les coordonnees de Lome, Togo -- A CORRIGER une fois que
+    chaque parcelle aura ses vraies coordonnees GPS.
+    """
+    if latitude is None or longitude is None:
+        latitude, longitude = 6.1319, 1.2228  # Lome, Togo (valeur par defaut)
+
+    try:
+        response = requests.get(
+            OPEN_METEO_URL,
+            params={
+                'latitude': latitude,
+                'longitude': longitude,
+                'hourly': 'precipitation,precipitation_probability',
+                'forecast_days': 2,
+                'timezone': 'Africa/Lome',
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException:
+        # En cas d'echec (pas de reseau, API indisponible), on retourne
+        # une liste vide -- le moteur de decision doit alors se rabattre
+        # sur l'humidite seule, sans tenir compte de la pluie prevue.
+        return []
+
+    heures_list = data.get('hourly', {}).get('time', [])
+    pluie_list = data.get('hourly', {}).get('precipitation', [])
+    proba_list = data.get('hourly', {}).get('precipitation_probability', [])
+
+    maintenant = datetime.now()
+    resultats = []
+    for i, heure_str in enumerate(heures_list):
+        heure_dt = datetime.fromisoformat(heure_str)
+        if maintenant <= heure_dt <= maintenant + timedelta(hours=heures):
+            resultats.append({
+                'heure': heure_dt,
+                'pluie_mm': pluie_list[i] if i < len(pluie_list) else 0.0,
+                'probabilite_pct': proba_list[i] if i < len(proba_list) else 0,
+            })
+    return resultats
+
+
+def prochaine_pluie_significative(previsions, seuil_mm=2.0):
+    """
+    Trouve la prochaine heure ou une pluie jugee "significative" est
+    prevue (par defaut, plus de 2mm -- ce seuil peut etre ajuste).
+
+    Retourne un dict {'heure': datetime, 'pluie_mm': float} ou None
+    si aucune pluie significative n'est prevue dans la fenetre fournie.
+    """
+    for prevision in previsions:
+        if prevision['pluie_mm'] >= seuil_mm:
+            return prevision
+    return None
+
+
+def pluie_cumulee_avant(previsions, heure_limite):
+    """Somme la pluie prevue (mm) entre maintenant et une heure donnee."""
+    return sum(p['pluie_mm'] for p in previsions if p['heure'] <= heure_limite)

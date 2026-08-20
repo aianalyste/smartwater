@@ -1,0 +1,17 @@
+# === SmartWater backend — dependances Python ===
+Django==5.0.6
+djangorestframework==3.15.1
+psycopg2-binary==2.9.12          # connexion PostgreSQL (Supabase)
+python-decouple==3.8            # lecture des variables d'environnement (.env)
+django-cors-headers==4.3.1      # autorise l'app Flutter a appeler l'API
+paho-mqtt==1.6.1                # communication MQTT avec l'ESP32
+requests==2.31.0                # appels a l'API meteo Open-Meteo
+# scikit-learn==1.4.2             # Random Forest (detection phase phenologique)
+# prophet==1.1.5                  # prediction du besoin en eau (serie temporelle)
+# pandas==2.2.2                   # manipulation des donnees pour l'IA
+# numpy==1.26.4
+celery==5.4.0                   # taches planifiees (verification meteo, decisions periodiques)
+redis==5.0.4                    # broker pour Celery (peut etre remplace par un autre plus tard)
+gunicorn==22.0.0                # serveur de production
+whitenoise==6.6.0               # sert les fichiers statiques en production (necessaire sur Render)
+dj-database-url==2.2.0          # lit l'URL de connexion Supabase fournie par Render en une seule variable
