@@ -7,16 +7,43 @@ from datetime import date, timedelta
 
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from .models import Parcelle, Zone, DemandeRattachement, DecisionIrrigation
+from .models import Parcelle, Zone, DemandeRattachement, DecisionIrrigation, Utilisateur
 from .serializers import (
     ParcelleSerializer, ZoneSerializer, DemandeRattachementSerializer,
-    DecisionIrrigationSerializer,
+    DecisionIrrigationSerializer, UtilisateurSerializer,
 )
 from irrigation.water_savings import generer_rapport_economie_eau
 
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def inscription_ou_connexion(request):
+    """
+    POST /api/inscription/
+    Corps attendu : {"nom": "...", "telephone": "...", "ville": "...", "localite": "..."}
+    """
+    telephone = request.data.get('telephone', '').strip()
+    if not telephone:
+        return Response({'erreur': 'Le numero de telephone est requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    utilisateur, cree = Utilisateur.objects.get_or_create(
+        telephone=telephone,
+        defaults={
+            'nom': request.data.get('nom', ''),
+            'ville': request.data.get('ville', ''),
+            'localite': request.data.get('localite', ''),
+        },
+    )
+    if not cree:
+        utilisateur.nom = request.data.get('nom', utilisateur.nom)
+        utilisateur.ville = request.data.get('ville', utilisateur.ville)
+        utilisateur.localite = request.data.get('localite', utilisateur.localite)
+        utilisateur.save()
+
+    return Response(UtilisateurSerializer(utilisateur).data, status=status.HTTP_200_OK)
 
 class MesParcellesView(generics.ListAPIView):
     """

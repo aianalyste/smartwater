@@ -16,7 +16,12 @@ class CultureSerializer(serializers.ModelSerializer):
         model = Culture
         fields = '__all__'
 
-
+class UtilisateurSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Utilisateur
+        fields = ('id', 'nom', 'telephone', 'ville', 'localite', 'role', 'session_token')
+        read_only_fields = ('id', 'role', 'session_token')
+        
 class VanneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vanne

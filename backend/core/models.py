@@ -21,10 +21,8 @@ from django.db import models
 class Utilisateur(models.Model):
     """
     Un utilisateur de l'app : agriculteur, agronome, technicien ou admin.
-    L'authentification elle-meme (telephone + OTP) est geree par
-    Supabase Auth -- ce modele stocke seulement les infos metier
-    liees a ce compte (role, nom, etc.), relie par le meme identifiant
-    (supabase_user_id) que Supabase utilise.
+    Inscription simplifiee pour la phase pilote : nom, telephone, ville,
+    localite -- sans mot de passe ni verification SMS.
     """
 
     ROLE_CHOICES = [
@@ -35,16 +33,22 @@ class Utilisateur(models.Model):
         ('demo', 'Compte demo (jury)'),
     ]
 
-    # Identifiant fourni par Supabase Auth lors de la connexion (UUID)
-    supabase_user_id = models.CharField(max_length=64, unique=True)
+    nom = models.CharField(max_length=120)
     telephone = models.CharField(max_length=20, unique=True)
-    nom = models.CharField(max_length=120, blank=True)
+    ville = models.CharField(max_length=120, blank=True)
+    localite = models.CharField(max_length=120, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='agriculteur')
+    session_token = models.CharField(max_length=64, unique=True, editable=False)
     date_creation = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.nom or self.telephone} ({self.role})"
+    def save(self, *args, **kwargs):
+        if not self.session_token:
+            import secrets
+            self.session_token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.nom} ({self.telephone})"
 
 class DemandeRattachement(models.Model):
     """

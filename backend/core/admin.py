@@ -18,9 +18,9 @@ from .models import (
 
 @admin.register(Utilisateur)
 class UtilisateurAdmin(admin.ModelAdmin):
-    list_display = ('nom', 'telephone', 'role', 'date_creation')
+    list_display = ('nom', 'telephone', 'ville', 'localite', 'role', 'date_creation')
     list_filter = ('role',)
-    search_fields = ('nom', 'telephone')
+    search_fields = ('nom', 'telephone', 'ville', 'localite')
 
 
 @admin.register(DemandeRattachement)
