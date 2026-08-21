@@ -123,7 +123,9 @@ REST_FRAMEWORK = {
 
 # --- CORS : autorise l'app Flutter (et un futur site web) a appeler l'API ---
 # En developpement on autorise tout ; a restreindre en production.
-CORS_ALLOW_ALL_ORIGINS = config('DEBUG', default=True, cast=bool)
+CORS_ALLOWED_ORIGINS = [
+    'https://aianalyste.github.io',
+]
 
 # --- Cles Supabase (verification des tokens d'authentification) ---
 SUPABASE_URL = config('SUPABASE_URL', default='')
