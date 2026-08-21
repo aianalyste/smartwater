@@ -10,13 +10,13 @@ import 'screens/home_shell.dart';
 /// Ces valeurs viennent de ton projet Supabase
 /// (Project Settings > API).
 /// =========================================================
-const String supabaseUrl = 'https://xxxxxxxxxxxxxxxx.supabase.co';
-const String supabaseAnonKey = 'ta-cle-anon-supabase';
+const String supabaseUrl = 'https://qguliygntmcozyjikmve.supabase.co';
+const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFndWxpeWdudG1jb3p5amlrbXZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMjU2OTEsImV4cCI6MjEwMjgwMTY5MX0.coOb3p86dRdejo_1T5Gyw8F3ns1PcbDEh0oDm0waaHw';
 
 /// A REMPLIR : adresse de ton backend Django une fois deploye.
 /// En developpement local avec l'emulateur Android, utilise
 /// 10.0.2.2 au lieu de 127.0.0.1 pour joindre ta machine.
-const String apiBaseUrl = 'http://10.0.2.2:8000/api';
+const String apiBaseUrl = 'https://smartwater-mn2b.onrender.com/api';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
