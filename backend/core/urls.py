@@ -7,6 +7,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('inscription/', views.inscription_ou_connexion, name='inscription'),
     path('parcelles/', views.MesParcellesView.as_view(), name='mes-parcelles'),
     path('demandes-rattachement/', views.DemandeRattachementCreateView.as_view(), name='demande-rattachement'),
     path('zones/<int:zone_id>/irrigation-manuelle/', views.demarrer_irrigation_manuelle, name='irrigation-manuelle'),
