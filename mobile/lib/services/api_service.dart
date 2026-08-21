@@ -1,19 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart' show apiBaseUrl;
+import 'session_service.dart';
 
-/// Centralise tous les appels au backend Django.
-/// Ajoute automatiquement le token Supabase de l'utilisateur connecte
-/// dans l'en-tete Authorization, comme attendu par
-/// core/authentication.py cote backend.
 class ApiService {
   static Future<Map<String, String>> _headers() async {
-    final session = Supabase.instance.client.auth.currentSession;
+    final token = await SessionService.getToken();
     return {
       'Content-Type': 'application/json',
-      if (session != null) 'Authorization': 'Bearer ${session.accessToken}',
+      if (token != null) 'Authorization': 'Token $token',
     };
   }
 
