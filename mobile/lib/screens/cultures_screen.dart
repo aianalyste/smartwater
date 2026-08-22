@@ -29,9 +29,11 @@ class _CulturesScreenState extends State<CulturesScreen> {
       body: FutureBuilder<List<dynamic>>(
         future: _parcellesFuture,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final parcelles = snapshot.data!;
-          if (parcelles.isEmpty) return const Center(child: Text('Aucune parcelle.'));
+          if (parcelles.isEmpty)
+            return const Center(child: Text('Aucune parcelle.'));
 
           final zones = parcelles[0]['zones'] as List<dynamic>;
 
@@ -61,7 +63,9 @@ class _CultureCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(zone['nom'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            Text(zone['nom'] ?? '',
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             const SizedBox(height: 4),
             Text('Culture : ${zone['culture']?['nom'] ?? '-'}'),
             Text('Stade phenologique : $phase'),
@@ -74,12 +78,14 @@ class _CultureCard extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.water_drop_outlined, size: 16, color: AppColors.vertFonce),
+                  Icon(Icons.water_drop_outlined,
+                      size: 16, color: AppColors.vertFonce),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       "L'IA ajuste l'arrosage automatiquement selon la meteo et le stade de la culture.",
-                      style: TextStyle(fontSize: 12, color: AppColors.vertFonce),
+                      style:
+                          TextStyle(fontSize: 12, color: AppColors.vertFonce),
                     ),
                   ),
                 ],
@@ -87,6 +93,8 @@ class _CultureCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _RapportEauWidget(zoneId: zone['id']),
+            const SizedBox(height: 8),
+            _MeteoWidget(zoneId: zone['id']),
           ],
         ),
       ),
@@ -125,6 +133,50 @@ class _RapportEauWidgetState extends State<_RapportEauWidget> {
             Text(
               '${pct?.toStringAsFixed(0) ?? '—'}% d\'eau economisee ce mois-ci',
               style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MeteoWidget extends StatefulWidget {
+  final int zoneId;
+  const _MeteoWidget({required this.zoneId});
+
+  @override
+  State<_MeteoWidget> createState() => _MeteoWidgetState();
+}
+
+class _MeteoWidgetState extends State<_MeteoWidget> {
+  late Future<Map<String, dynamic>> _meteoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _meteoFuture = ApiService.getMeteo(widget.zoneId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _meteoFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final pluiePrevue = snapshot.data!['pluie_prevue'] == true;
+        final volume = snapshot.data!['volume_mm'];
+        return Row(
+          children: [
+            Icon(pluiePrevue ? Icons.cloud_outlined : Icons.wb_sunny_outlined,
+                size: 18, color: AppColors.bleuEau),
+            const SizedBox(width: 6),
+            Text(
+              pluiePrevue
+                  ? 'Pluie prevue (${volume?.toStringAsFixed(0) ?? '?'}mm) - irrigation ajustee'
+                  : 'Pas de pluie prevue prochainement',
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.texteSecondaire),
             ),
           ],
         );

@@ -13,6 +13,17 @@ class ApiService {
     };
   }
 
+  static Future<Map<String, dynamic>> getMeteo(int zoneId) async {
+    final response = await http.get(
+      Uri.parse('$apiBaseUrl/zones/$zoneId/meteo/'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Erreur meteo (${response.statusCode})');
+  }
+
   static Future<List<dynamic>> getMesParcelles() async {
     final response = await http.get(Uri.parse('$apiBaseUrl/parcelles/'), headers: await _headers());
     if (response.statusCode == 200) {

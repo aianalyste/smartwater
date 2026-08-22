@@ -17,6 +17,27 @@ from .serializers import (
 )
 from irrigation.water_savings import generer_rapport_economie_eau
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def previsions_meteo(request, zone_id):
+    """GET /api/zones/<id>/meteo/ — prévisions de pluie pour la parcelle."""
+    from irrigation.weather import get_previsions_pluie, prochaine_pluie_significative
+
+    try:
+        zone = Zone.objects.get(id=zone_id, parcelle__proprietaire=request.user)
+    except Zone.DoesNotExist:
+        return Response({'erreur': 'Zone introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    parcelle = zone.parcelle
+    previsions = get_previsions_pluie(parcelle.latitude, parcelle.longitude, heures=24)
+    prochaine = prochaine_pluie_significative(previsions)
+
+    return Response({
+        'pluie_prevue': prochaine is not None,
+        'heure': prochaine['heure'].isoformat() if prochaine else None,
+        'volume_mm': prochaine['pluie_mm'] if prochaine else 0,
+    })
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

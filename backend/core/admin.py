@@ -66,6 +66,24 @@ class DeviceAdmin(admin.ModelAdmin):
 @admin.register(Capteur)
 class CapteurAdmin(admin.ModelAdmin):
     list_display = ('type_capteur', 'zone', 'derniere_humidite_pct', 'derniere_lecture')
+    fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c')
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if obj.type_capteur == 'humidite_temperature' and obj.derniere_humidite_pct is not None:
+            from .models import LectureCapteur
+            from irrigation.decision_engine import prendre_decision
+
+            LectureCapteur.objects.create(
+                capteur=obj,
+                humidite_pct=obj.derniere_humidite_pct,
+                temperature_c=obj.derniere_temperature_c,
+            )
+            prendre_decision(
+                obj.zone,
+                humidite_pct=obj.derniere_humidite_pct,
+                temperature_c=obj.derniere_temperature_c or 28.0,
+            )
 
 
 admin.site.register(LectureCapteur)

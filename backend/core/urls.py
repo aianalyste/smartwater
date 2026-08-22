@@ -14,4 +14,5 @@ urlpatterns = [
     path('zones/<int:zone_id>/arreter-irrigation/', views.arreter_irrigation, name='arreter-irrigation'),
     path('zones/<int:zone_id>/rapport-eau/', views.rapport_economie_eau, name='rapport-eau'),
     path('zones/<int:zone_id>/historique/', views.historique_capteur, name='historique-capteur'),
+    path('zones/<int:zone_id>/meteo/', views.previsions_meteo, name='previsions-meteo'),
 ]
