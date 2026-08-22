@@ -41,7 +41,7 @@ class Utilisateur(models.Model):
     session_token = models.CharField(max_length=64, unique=True, editable=False)
     date_creation = models.DateTimeField(auto_now_add=True)
 
-        def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
         if not self.session_token:
             import secrets
             self.session_token = secrets.token_urlsafe(32)
