@@ -118,12 +118,27 @@ class _ZoneTuile extends StatelessWidget {
   final dynamic zone;
   const _ZoneTuile({required this.zone});
 
+  String _libelleEtat(String etat) {
+    switch (etat) {
+      case 'normal': return 'Normal';
+      case 'maintenance': return 'Maintenance';
+      case 'defaillant': return 'Defaillant';
+      default: return 'Pas de donnees';
+    }
+  }
+
+  Color _couleurEtat(String etat) {
+    switch (etat) {
+      case 'normal': return AppColors.vertPrincipal;
+      case 'maintenance': return AppColors.alerte;
+      case 'defaillant': return AppColors.danger;
+      default: return AppColors.texteSecondaire;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final capteurs = zone['capteurs'] as List<dynamic>? ?? [];
-    final humidite = capteurs.isNotEmpty ? capteurs[0]['derniere_humidite_pct'] : null;
-    final temperature = capteurs.isNotEmpty ? capteurs[0]['derniere_temperature_c'] : null;
-    final vanneEtat = zone['vanne']?['etat'] ?? 'inconnu';
     final phase = zone['phase_actuelle']?['phase'] ?? '-';
 
     return Container(
@@ -133,36 +148,59 @@ class _ZoneTuile extends StatelessWidget {
         color: AppColors.bleuClairFond,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Text('${zone['nom']} — ${zone['culture']?['nom'] ?? ''}',
+              style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text('Phase : $phase', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+          const SizedBox(height: 10),
+
+          const Text('Etat des capteurs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          if (capteurs.isEmpty)
+            const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire))
+          else
+            ...capteurs.map((c) {
+              final etat = c['etat'] ?? 'aucune_donnee';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: _couleurEtat(etat), shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Text(c['type_capteur'] == 'humidite_temperature' ? 'Capteur humidite/temperature' : 'Capteur spectral',
+                        style: const TextStyle(fontSize: 12)),
+                    const Spacer(),
+                    Text(_libelleEtat(etat), style: TextStyle(fontSize: 12, color: _couleurEtat(etat), fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              );
+            }),
+
+          const SizedBox(height: 10),
+          const Text('Condition actuelle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          if (capteurs.isEmpty)
+            const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire))
+          else
+            Row(
               children: [
-                Text('${zone['nom']} — ${zone['culture']?['nom'] ?? ''}',
-                    style: const TextStyle(fontWeight: FontWeight.w500)),
-                Text('Phase : $phase', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+                Text(
+                  capteurs[0]['derniere_humidite_pct'] != null
+                      ? 'Humidite : ${capteurs[0]['derniere_humidite_pct'].toStringAsFixed(0)}%'
+                      : 'Humidite : —',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  capteurs[0]['derniere_temperature_c'] != null
+                      ? 'Temperature : ${capteurs[0]['derniere_temperature_c'].toStringAsFixed(0)}°C'
+                      : 'Temperature : —',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                humidite != null ? '${humidite.toStringAsFixed(0)}%' : '—',
-                style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.vertFonce),
-              ),
-              Text(
-                temperature != null ? '${temperature.toStringAsFixed(0)}°C' : '—',
-                style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            vanneEtat == 'ouverte' ? Icons.water_drop : Icons.water_drop_outlined,
-            color: vanneEtat == 'ouverte' ? AppColors.bleuEau : AppColors.texteSecondaire,
-          ),
         ],
       ),
     );

@@ -21,7 +21,7 @@ class UtilisateurSerializer(serializers.ModelSerializer):
         model = Utilisateur
         fields = ('id', 'nom', 'telephone', 'ville', 'localite', 'role', 'session_token')
         read_only_fields = ('id', 'role', 'session_token')
-        
+
 class VanneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vanne
@@ -29,10 +29,15 @@ class VanneSerializer(serializers.ModelSerializer):
 
 
 class CapteurSerializer(serializers.ModelSerializer):
+    etat = serializers.SerializerMethodField()
+
     class Meta:
         model = Capteur
-        fields = ('id', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c', 'derniere_lecture')
+        fields = ('id', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c',
+                   'derniere_lecture', 'etat')
 
+    def get_etat(self, obj):
+        return obj.etat_sante()
 
 class ZoneSerializer(serializers.ModelSerializer):
     culture = CultureSerializer(read_only=True)

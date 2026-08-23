@@ -208,9 +208,49 @@ class Capteur(models.Model):
     derniere_humidite_pct = models.FloatField(null=True, blank=True)
     derniere_temperature_c = models.FloatField(null=True, blank=True)
     derniere_lecture = models.DateTimeField(null=True, blank=True)
+    statut_maintenance = models.BooleanField(
+        default=False,
+        help_text="Coche manuellement si ce capteur est en cours de nettoyage/reparation."
+    )
 
     def __str__(self):
         return f"{self.get_type_capteur_display()} - {self.zone.nom}"
+
+    def etat_sante(self):
+        """
+        Determine l'etat du capteur : 'maintenance', 'aucune_donnee',
+        'defaillant', ou 'normal'.
+
+        Logique de detection de panne (point 1 de la liste validee) :
+        - Aucune lecture jamais recue -> 'aucune_donnee'
+        - Pas de nouvelle lecture depuis plus de 48h -> 'defaillant'
+        - Les 3 dernieres lectures (sur 48h) ont exactement la meme
+          valeur d'humidite -> 'defaillant' (valeur figee anormale)
+        - Sinon -> 'normal'
+        """
+        if self.statut_maintenance:
+            return 'maintenance'
+
+        if not self.derniere_lecture:
+            return 'aucune_donnee'
+
+        from django.utils import timezone
+        from datetime import timedelta
+
+        if self.derniere_lecture < timezone.now() - timedelta(hours=48):
+            return 'defaillant'
+
+        lectures_recentes = list(
+            self.lectures.filter(
+                horodatage__gte=timezone.now() - timedelta(hours=48)
+            ).order_by('-horodatage')[:3]
+        )
+        if len(lectures_recentes) >= 3:
+            valeurs = [l.humidite_pct for l in lectures_recentes]
+            if len(set(valeurs)) == 1:
+                return 'defaillant'
+
+        return 'normal'
 
 
 class LectureCapteur(models.Model):

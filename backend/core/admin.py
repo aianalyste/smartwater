@@ -66,7 +66,7 @@ class DeviceAdmin(admin.ModelAdmin):
 @admin.register(Capteur)
 class CapteurAdmin(admin.ModelAdmin):
     list_display = ('type_capteur', 'zone', 'derniere_humidite_pct', 'derniere_lecture')
-    fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c')
+    fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c', 'statut_maintenance')
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
