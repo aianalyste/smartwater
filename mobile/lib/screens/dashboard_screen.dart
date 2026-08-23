@@ -142,67 +142,120 @@ class _ZoneTuile extends StatelessWidget {
     final phase = zone['phase_actuelle']?['phase'] ?? '-';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.bleuClairFond,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${zone['nom']} — ${zone['culture']?['nom'] ?? ''}',
-              style: const TextStyle(fontWeight: FontWeight.w500)),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
           Text('Phase : $phase', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
 
-          const Text('Etat des capteurs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
+          const Text('Etat des capteurs', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
           if (capteurs.isEmpty)
-            const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire))
+            _cartePasDeDonnees()
           else
             ...capteurs.map((c) {
               final etat = c['etat'] ?? 'aucune_donnee';
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+              final couleur = _couleurEtat(etat);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: couleur.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: Row(
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: _couleurEtat(etat), shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    Text(c['type_capteur'] == 'humidite_temperature' ? 'Capteur humidite/temperature' : 'Capteur spectral',
-                        style: const TextStyle(fontSize: 12)),
-                    const Spacer(),
-                    Text(_libelleEtat(etat), style: TextStyle(fontSize: 12, color: _couleurEtat(etat), fontWeight: FontWeight.w500)),
+                    Icon(
+                      c['type_capteur'] == 'humidite_temperature' ? Icons.water_drop_outlined : Icons.sensors,
+                      size: 16, color: couleur,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        c['type_capteur'] == 'humidite_temperature' ? 'Humidite / Temperature' : 'Capteur spectral',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(20)),
+                      child: Text(_libelleEtat(etat), style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                    ),
                   ],
                 ),
               );
             }),
 
-          const SizedBox(height: 10),
-          const Text('Condition actuelle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 16),
+          const Text('Conditions actuelles', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
           if (capteurs.isEmpty)
-            const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire))
+            _cartePasDeDonnees()
           else
             Row(
               children: [
-                Text(
-                  capteurs[0]['derniere_humidite_pct'] != null
-                      ? 'Humidite : ${capteurs[0]['derniere_humidite_pct'].toStringAsFixed(0)}%'
-                      : 'Humidite : —',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                Expanded(
+                  child: _carteValeur(
+                    icone: Icons.water_drop,
+                    couleur: AppColors.bleuEau,
+                    label: 'Humidite',
+                    valeur: capteurs[0]['derniere_humidite_pct'] != null
+                        ? '${capteurs[0]['derniere_humidite_pct'].toStringAsFixed(0)}%'
+                        : '—',
+                  ),
                 ),
-                const SizedBox(width: 16),
-                Text(
-                  capteurs[0]['derniere_temperature_c'] != null
-                      ? 'Temperature : ${capteurs[0]['derniere_temperature_c'].toStringAsFixed(0)}°C'
-                      : 'Temperature : —',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _carteValeur(
+                    icone: Icons.thermostat,
+                    couleur: AppColors.alerte,
+                    label: 'Temperature',
+                    valeur: capteurs[0]['derniere_temperature_c'] != null
+                        ? '${capteurs[0]['derniere_temperature_c'].toStringAsFixed(0)}°C'
+                        : '—',
+                  ),
                 ),
               ],
             ),
         ],
       ),
+    );
+  }
+
+  Widget _carteValeur({required IconData icone, required Color couleur, required String label, required String valeur}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: couleur.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icone, color: couleur, size: 22),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
+          const SizedBox(height: 2),
+          Text(valeur, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: couleur)),
+        ],
+      ),
+    );
+  }
+
+  Widget _cartePasDeDonnees() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+      child: const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
     );
   }
 }

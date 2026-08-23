@@ -69,7 +69,12 @@ class CapteurAdmin(admin.ModelAdmin):
     fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c', 'statut_maintenance')
 
     def save_model(self, request, obj, form, change):
+        if obj.type_capteur == 'humidite_temperature' and obj.derniere_humidite_pct is not None:
+            from django.utils import timezone
+            obj.derniere_lecture = timezone.now()
+
         super().save_model(request, obj, form, change)
+
         if obj.type_capteur == 'humidite_temperature' and obj.derniere_humidite_pct is not None:
             from .models import LectureCapteur
             from irrigation.decision_engine import prendre_decision
@@ -87,6 +92,7 @@ class CapteurAdmin(admin.ModelAdmin):
 
 
 admin.site.register(LectureCapteur)
+
 
 
 @admin.register(Vanne)
