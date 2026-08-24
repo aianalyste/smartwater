@@ -81,3 +81,43 @@ def prochaine_pluie_significative(previsions, seuil_mm=2.0):
 def pluie_cumulee_avant(previsions, heure_limite):
     """Somme la pluie prevue (mm) entre maintenant et une heure donnee."""
     return sum(p['pluie_mm'] for p in previsions if p['heure'] <= heure_limite)
+
+
+def get_previsions_quotidiennes_2_semaines(latitude, longitude):
+    """
+    Prevision de pluie jour par jour sur les 2 prochaines semaines
+    (affichage permanent demande dans le bloc Decision, meme sans
+    capteur installe).
+    """
+    if latitude is None or longitude is None:
+        latitude, longitude = 6.1319, 1.2228  # Lome par defaut
+
+    try:
+        response = requests.get(
+            OPEN_METEO_URL,
+            params={
+                'latitude': latitude,
+                'longitude': longitude,
+                'daily': 'precipitation_sum,precipitation_probability_max',
+                'forecast_days': 14,
+                'timezone': 'Africa/Lome',
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException:
+        return []
+
+    dates = data.get('daily', {}).get('time', [])
+    pluies = data.get('daily', {}).get('precipitation_sum', [])
+    probas = data.get('daily', {}).get('precipitation_probability_max', [])
+
+    return [
+        {
+            'date': dates[i],
+            'pluie_mm': pluies[i] if i < len(pluies) else 0,
+            'probabilite_pct': probas[i] if i < len(probas) else 0,
+        }
+        for i in range(len(dates))
+    ]

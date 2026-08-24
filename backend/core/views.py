@@ -19,6 +19,55 @@ from irrigation.water_savings import generer_rapport_economie_eau
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def decision_actuelle(request, zone_id):
+    """GET /api/zones/<id>/decision/ — bloc Decision complet (point 2)."""
+    from irrigation.weather import get_previsions_quotidiennes_2_semaines
+    from irrigation.fao56 import calculer_etc
+
+    try:
+        zone = Zone.objects.get(id=zone_id, parcelle__proprietaire=request.user)
+    except Zone.DoesNotExist:
+        return Response({'erreur': 'Zone introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    capteur = zone.capteurs.filter(type_capteur='humidite_temperature').first()
+    capteurs_data = None
+    if capteur and capteur.derniere_humidite_pct is not None:
+        capteurs_data = {
+            'humidite_pct': capteur.derniere_humidite_pct,
+            'temperature_c': capteur.derniere_temperature_c,
+        }
+
+    temperature = capteurs_data['temperature_c'] if capteurs_data else 28.0
+    etc_mm, phase, kc = calculer_etc(zone, temperature)
+
+    parcelle = zone.parcelle
+    meteo_14j = get_previsions_quotidiennes_2_semaines(parcelle.latitude, parcelle.longitude)
+
+    derniere_decision = DecisionIrrigation.objects.filter(zone=zone).order_by('-date_heure').first()
+
+    if capteurs_data is None:
+        decision = 'indisponible'
+        explication = "Pas de donnees capteurs -- decision impossible pour l'instant."
+    elif derniere_decision and derniere_decision.decision in ('irrigation', 'irrigation_manuelle'):
+        decision = 'oui'
+        explication = derniere_decision.explication
+    else:
+        decision = 'non'
+        explication = derniere_decision.explication if derniere_decision else "Humidite suffisante, pas d'irrigation necessaire."
+
+    return Response({
+        'capteurs': capteurs_data,
+        'phase': phase,
+        'kc': kc,
+        'etc_mm': etc_mm,
+        'meteo_14j': meteo_14j,
+        'decision': decision,
+        'explication': explication,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def previsions_meteo(request, zone_id):
     """GET /api/zones/<id>/meteo/ — prévisions de pluie pour la parcelle."""
     from irrigation.weather import get_previsions_pluie, prochaine_pluie_significative

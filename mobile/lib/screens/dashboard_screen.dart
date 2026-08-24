@@ -226,6 +226,9 @@ class _ZoneTuile extends StatelessWidget {
                 ),
               ],
             ),
+
+          const SizedBox(height: 16),
+          _BlocDecision(zoneId: zone['id']),
         ],
       ),
     );
@@ -256,6 +259,121 @@ class _ZoneTuile extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
       child: const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+    );
+  }
+}
+
+class _BlocDecision extends StatefulWidget {
+  final int zoneId;
+  const _BlocDecision({required this.zoneId});
+
+  @override
+  State<_BlocDecision> createState() => _BlocDecisionState();
+}
+
+class _BlocDecisionState extends State<_BlocDecision> {
+  late Future<Map<String, dynamic>> _decisionFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _decisionFuture = ApiService.getDecision(widget.zoneId);
+  }
+
+  Color _couleurDecision(String decision) {
+    switch (decision) {
+      case 'oui': return AppColors.bleuEau;
+      case 'non': return AppColors.vertPrincipal;
+      default: return AppColors.texteSecondaire;
+    }
+  }
+
+  String _libelleDecision(String decision) {
+    switch (decision) {
+      case 'oui': return 'ARROSER';
+      case 'non': return 'PAS BESOIN';
+      default: return 'INDISPONIBLE';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _decisionFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(height: 60, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+        }
+        final data = snapshot.data!;
+        final decision = data['decision'] ?? 'indisponible';
+        final couleur = _couleurDecision(decision);
+        final meteo14j = data['meteo_14j'] as List<dynamic>? ?? [];
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: couleur.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: couleur.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text('Decision', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(20)),
+                    child: Text(_libelleDecision(decision),
+                        style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (data['phase'] != null)
+                Text(
+                  'Phase : ${data['phase']} — besoin en eau : ${data['etc_mm']?.toStringAsFixed(1) ?? '—'}mm/jour',
+                  style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire),
+                ),
+              const SizedBox(height: 4),
+              Text(data['explication'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+              const SizedBox(height: 12),
+              const Text('Meteo (14 prochains jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 64,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: meteo14j.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final jour = meteo14j[i];
+                    final pluie = (jour['pluie_mm'] as num?)?.toDouble() ?? 0;
+                    final date = DateTime.tryParse(jour['date'] ?? '');
+                    return Container(
+                      width: 48,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(date != null ? '${date.day}/${date.month}' : '', style: const TextStyle(fontSize: 9, color: AppColors.texteSecondaire)),
+                          const SizedBox(height: 2),
+                          Icon(pluie > 1 ? Icons.cloud : Icons.wb_sunny_outlined, size: 16, color: pluie > 1 ? AppColors.bleuEau : AppColors.alerte),
+                          const SizedBox(height: 2),
+                          Text('${pluie.toStringAsFixed(0)}mm', style: const TextStyle(fontSize: 9)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

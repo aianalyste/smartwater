@@ -88,4 +88,14 @@ class ApiService {
     }
     throw Exception('Erreur lors du chargement de l\'historique (${response.statusCode})');
   }
+    static Future<Map<String, dynamic>> getDecision(int zoneId) async {
+    final response = await http.get(
+      Uri.parse('$apiBaseUrl/zones/$zoneId/decision/'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Erreur decision (${response.statusCode})');
+  }
 }
