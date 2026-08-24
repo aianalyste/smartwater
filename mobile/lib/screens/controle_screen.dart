@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 
-/// Ecran Controle : vannes par zone + arrosage manuel, comme dans
-/// l'app de reference, avec en plus le "pourquoi" de la derniere
-/// decision automatique (transparence de l'IA).
 class ControleScreen extends StatefulWidget {
   const ControleScreen({super.key});
 
@@ -17,44 +14,39 @@ class _ControleScreenState extends State<ControleScreen> {
   late Future<List<dynamic>> _parcellesFuture;
   double _volumePct = 50;
   double _dureeMinutes = 20;
+  String? _messageStatut;
 
   @override
   void initState() {
     super.initState();
-    _parcellesFuture = ApiService.getMesParcelles();
+    _rafraichir();
   }
 
-  Future<void> _demarrer(int zoneId) async {
+  void _rafraichir() {
+    setState(() {
+      _parcellesFuture = ApiService.getMesParcelles();
+    });
+  }
+
+  Future<void> _demarrer(int zoneId, String nomZone) async {
     try {
       await ApiService.demarrerIrrigationManuelle(zoneId, _dureeMinutes);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Irrigation demarree.')),
-        );
-      }
+      setState(() {
+        _messageStatut = 'Irrigation demarree sur $nomZone : ${_volumePct.toStringAsFixed(0)}% pendant ${_dureeMinutes.toStringAsFixed(0)} min';
+      });
+      _rafraichir();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors du demarrage.')),
-        );
-      }
+      setState(() => _messageStatut = 'Erreur lors du demarrage.');
     }
   }
 
-  Future<void> _arreter(int zoneId) async {
+  Future<void> _arreter(int zoneId, String nomZone) async {
     try {
       await ApiService.arreterIrrigation(zoneId);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Irrigation arretee.')),
-        );
-      }
+      setState(() => _messageStatut = 'Irrigation arretee sur $nomZone.');
+      _rafraichir();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors de l\'arret.')),
-        );
-      }
+      setState(() => _messageStatut = 'Erreur lors de l\'arret.');
     }
   }
 
@@ -67,46 +59,102 @@ class _ControleScreenState extends State<ControleScreen> {
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final parcelles = snapshot.data!;
-          if (parcelles.isEmpty) return const Center(child: Text('Aucune parcelle.'));
+          if (parcelles.isEmpty) {
+            return const Center(child: Text('Aucune parcelle.'));
+          }
 
           final zones = parcelles[0]['zones'] as List<dynamic>;
 
           return ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             children: [
-              const Text('Vannes', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-              const SizedBox(height: 8),
-              ...zones.map((zone) => _VanneTuile(
-                    zone: zone,
-                    onOuvrir: () => _demarrer(zone['id']),
-                    onFermer: () => _arreter(zone['id']),
-                  )),
-              const SizedBox(height: 24),
-              const Text('Arrosage manuel', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-              const SizedBox(height: 12),
-              Text('Volume : ${_volumePct.toStringAsFixed(0)}%'),
-              Slider(
-                value: _volumePct,
-                min: 10,
-                max: 100,
-                activeColor: AppColors.vertPrincipal,
-                onChanged: (v) => setState(() => _volumePct = v),
-              ),
-              Text('Duree : ${_dureeMinutes.toStringAsFixed(0)} min'),
-              Slider(
-                value: _dureeMinutes,
-                min: 5,
-                max: 60,
-                activeColor: AppColors.vertPrincipal,
-                onChanged: (v) => setState(() => _dureeMinutes = v),
-              ),
-              const SizedBox(height: 12),
-              if (zones.isNotEmpty)
-                ElevatedButton.icon(
-                  onPressed: () => _demarrer(zones[0]['id']),
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Demarrer'),
+              if (_messageStatut != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.vertPrincipal.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: AppColors.vertPrincipal, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(_messageStatut!, style: const TextStyle(fontSize: 13, color: AppColors.vertFonce))),
+                    ],
+                  ),
                 ),
+
+              const Text('Vannes', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              const SizedBox(height: 10),
+              ...zones.map((zone) => _VanneCard(
+                    zone: zone,
+                    onOuvrir: () => _demarrer(zone['id'], zone['nom']),
+                    onFermer: () => _arreter(zone['id'], zone['nom']),
+                  )),
+
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Arrosage manuel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Volume', style: TextStyle(fontSize: 13, color: AppColors.texteSecondaire)),
+                        Text('${_volumePct.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.vertPrincipal)),
+                      ],
+                    ),
+                    Slider(
+                      value: _volumePct,
+                      min: 10,
+                      max: 100,
+                      divisions: 18,
+                      activeColor: AppColors.vertPrincipal,
+                      label: '${_volumePct.toStringAsFixed(0)}%',
+                      onChanged: (v) => setState(() => _volumePct = v),
+                    ),
+
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Duree', style: TextStyle(fontSize: 13, color: AppColors.texteSecondaire)),
+                        Text('${_dureeMinutes.toStringAsFixed(0)} min', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.vertPrincipal)),
+                      ],
+                    ),
+                    Slider(
+                      value: _dureeMinutes,
+                      min: 5,
+                      max: 60,
+                      divisions: 11,
+                      activeColor: AppColors.vertPrincipal,
+                      label: '${_dureeMinutes.toStringAsFixed(0)} min',
+                      onChanged: (v) => setState(() => _dureeMinutes = v),
+                    ),
+
+                    const SizedBox(height: 16),
+                    if (zones.isNotEmpty)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _demarrer(zones[0]['id'], zones[0]['nom']),
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('Demarrer'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           );
         },
@@ -115,26 +163,55 @@ class _ControleScreenState extends State<ControleScreen> {
   }
 }
 
-class _VanneTuile extends StatelessWidget {
+class _VanneCard extends StatelessWidget {
   final dynamic zone;
   final VoidCallback onOuvrir;
   final VoidCallback onFermer;
 
-  const _VanneTuile({required this.zone, required this.onOuvrir, required this.onFermer});
+  const _VanneCard({required this.zone, required this.onOuvrir, required this.onFermer});
 
   @override
   Widget build(BuildContext context) {
     final ouverte = zone['vanne']?['etat'] == 'ouverte';
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.water_drop_outlined),
-        title: Text(zone['nom'] ?? ''),
-        subtitle: Text(zone['culture']?['nom'] ?? ''),
-        trailing: Switch(
-          value: ouverte,
-          activeColor: AppColors.vertPrincipal,
-          onChanged: (v) => v ? onOuvrir() : onFermer(),
-        ),
+    final couleur = ouverte ? AppColors.vertPrincipal : AppColors.texteSecondaire;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: couleur.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(ouverte ? Icons.water_drop : Icons.water_drop_outlined, color: couleur, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(zone['nom'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(zone['culture']?['nom'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(20)),
+            child: Text(ouverte ? 'Ouverte' : 'Fermee', style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(width: 8),
+          Switch(
+            value: ouverte,
+            activeColor: AppColors.vertPrincipal,
+            onChanged: (v) => v ? onOuvrir() : onFermer(),
+          ),
+        ],
       ),
     );
   }
