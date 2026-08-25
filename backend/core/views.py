@@ -281,3 +281,17 @@ def cron_verifier_irrigation_auto(request):
     call_command('verifier_irrigation_auto')
 
     return Response({'statut': 'verification effectuee'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mes_alertes(request):
+    """GET /api/alertes/ — toutes les alertes des parcelles de l'utilisateur."""
+    from .models import Alerte
+    from .serializers import AlerteSerializer
+
+    alertes = Alerte.objects.filter(
+        zone__parcelle__proprietaire=request.user
+    ).order_by('-date_creation')[:20]
+
+    return Response(AlerteSerializer(alertes).data if False else AlerteSerializer(alertes, many=True).data)

@@ -131,7 +131,7 @@ def _traiter_lecture(device, zone_code, humidite_pct, temperature_c, horodatage=
         humidite_pct=humidite_pct,
         temperature_c=temperature_c,
     )
-
+    capteur.generer_alerte_si_besoin()
     if humidite_pct is not None:
         prendre_decision(zone, humidite_pct=humidite_pct, temperature_c=temperature_c or 28.0)
 

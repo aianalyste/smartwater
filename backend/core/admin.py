@@ -84,6 +84,7 @@ class CapteurAdmin(admin.ModelAdmin):
                 humidite_pct=obj.derniere_humidite_pct,
                 temperature_c=obj.derniere_temperature_c,
             )
+            obj.generer_alerte_si_besoin()
             prendre_decision(
                 obj.zone,
                 humidite_pct=obj.derniere_humidite_pct,

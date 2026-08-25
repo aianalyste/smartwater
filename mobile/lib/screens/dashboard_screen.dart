@@ -24,7 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _parcellesFuture = ApiService.getMesParcelles();
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Tableau de bord')),
@@ -39,21 +39,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
           final parcelles = snapshot.data ?? [];
           if (parcelles.isEmpty) {
-            // Cas important : l'utilisateur n'a aucune parcelle liee
-            // (voir logique validee ensemble : il peut demander lui-meme
-            // un rattachement).
             return const _AucuneParcelleVue();
           }
-          return ListView.builder(
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: parcelles.length,
-            itemBuilder: (context, i) => _ParcelleCard(parcelle: parcelles[i]),
+            children: [
+              const _BandeauAlertes(),
+              ...parcelles.map<Widget>((p) => _ParcelleCard(parcelle: p)),
+            ],
           );
         },
       ),
     );
   }
 }
+
+class _BandeauAlertes extends StatefulWidget {
+  const _BandeauAlertes();
+
+  @override
+  State<_BandeauAlertes> createState() => _BandeauAlertesState();
+}
+
+class _BandeauAlertesState extends State<_BandeauAlertes> {
+  late Future<List<dynamic>> _alertesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _alertesFuture = ApiService.getAlertes();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: _alertesFuture,
+      builder: (context, snapshot) {
+        final alertes = snapshot.data ?? [];
+        if (alertes.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.danger.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 18),
+                  const SizedBox(width: 8),
+                  Text('${alertes.length} alerte(s)', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.danger)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...alertes.take(3).map((a) => Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('• ${a['message']}', style: const TextStyle(fontSize: 12, color: AppColors.danger)),
+                  )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 
 class _AucuneParcelleVue extends StatelessWidget {
   const _AucuneParcelleVue();
@@ -371,8 +426,10 @@ class _BlocDecisionState extends State<_BlocDecision> {
                   style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire),
                 ),
               const SizedBox(height: 4),
-              Text(data['explication'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
-
+              Text(
+                data['explication'] ?? '',
+                style: const TextStyle(fontSize: 14, color: AppColors.texteSecondaire, fontWeight: FontWeight.w500, height: 1.4),
+              ),
               if (_tempsRestant != null && _delaiTotalSecondes != null) ...[
                 const SizedBox(height: 18),
                 Center(

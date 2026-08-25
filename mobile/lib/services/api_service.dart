@@ -99,3 +99,15 @@ class ApiService {
     throw Exception('Erreur decision (${response.statusCode})');
   }
 }
+
+
+  static Future<List<dynamic>> getAlertes() async {
+    final response = await http.get(
+      Uri.parse('$apiBaseUrl/alertes/'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as List<dynamic>;
+    }
+    throw Exception('Erreur alertes (${response.statusCode})');
+  }
