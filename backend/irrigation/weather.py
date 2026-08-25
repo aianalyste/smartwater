@@ -15,14 +15,6 @@ def get_previsions_pluie(latitude, longitude, heures=24):
     """
     Recupere les previsions de pluie heure par heure pour une position
     donnee, sur les prochaines `heures` heures.
-
-    Retourne une liste de dicts :
-        [{'heure': datetime, 'pluie_mm': float, 'probabilite_pct': int}, ...]
-
-    Si latitude/longitude ne sont pas encore renseignes pour la parcelle
-    (voir Parcelle.latitude/longitude dans models.py), utilise par
-    defaut les coordonnees de Lome, Togo -- A CORRIGER une fois que
-    chaque parcelle aura ses vraies coordonnees GPS.
     """
     if latitude is None or longitude is None:
         latitude, longitude = 6.1319, 1.2228  # Lome, Togo (valeur par defaut)
@@ -42,19 +34,24 @@ def get_previsions_pluie(latitude, longitude, heures=24):
         response.raise_for_status()
         data = response.json()
     except requests.RequestException:
-        # En cas d'echec (pas de reseau, API indisponible), on retourne
-        # une liste vide -- le moteur de decision doit alors se rabattre
-        # sur l'humidite seule, sans tenir compte de la pluie prevue.
         return []
 
     heures_list = data.get('hourly', {}).get('time', [])
     pluie_list = data.get('hourly', {}).get('precipitation', [])
     proba_list = data.get('hourly', {}).get('precipitation_probability', [])
 
-    maintenant = datetime.now()
+    from django.utils import timezone as django_timezone
+
+    maintenant = django_timezone.now()
     resultats = []
     for i, heure_str in enumerate(heures_list):
         heure_dt = datetime.fromisoformat(heure_str)
+        # Rendre la date "consciente" du fuseau horaire, comme le reste
+        # de Django (USE_TZ=True) -- sinon Python refuse de la comparer
+        # a timezone.now().
+        if django_timezone.is_naive(heure_dt):
+            heure_dt = django_timezone.make_aware(heure_dt, django_timezone.get_current_timezone())
+
         if maintenant <= heure_dt <= maintenant + timedelta(hours=heures):
             resultats.append({
                 'heure': heure_dt,
