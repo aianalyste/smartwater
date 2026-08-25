@@ -370,6 +370,24 @@ class _BlocDecisionState extends State<_BlocDecision> {
                   },
                 ),
               ),
+               if ((data['prediction_humidite'] as List?)?.isNotEmpty == true) ...[
+                const SizedBox(height: 12),
+                const Text('Prediction humidite (5 jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Row(
+                  children: (data['prediction_humidite'] as List).map<Widget>((p) {
+                    return Expanded(
+                      child: Column(
+                        children: [
+                          Text('J+${p['jour']}', style: const TextStyle(fontSize: 10, color: AppColors.texteSecondaire)),
+                          const SizedBox(height: 4),
+                          Text('${p['humidite_projetee_pct']}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ],
           ),
         );

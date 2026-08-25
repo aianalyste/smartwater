@@ -43,6 +43,11 @@ def decision_actuelle(request, zone_id):
     parcelle = zone.parcelle
     meteo_14j = get_previsions_quotidiennes_2_semaines(parcelle.latitude, parcelle.longitude)
 
+    prediction_humidite = []
+    if capteur:
+        from irrigation.prediction_tendance import predire_humidite_future
+        prediction_humidite = predire_humidite_future(capteur, jours=5)
+
     derniere_decision = DecisionIrrigation.objects.filter(zone=zone).order_by('-date_heure').first()
 
     if capteurs_data is None:
@@ -61,6 +66,7 @@ def decision_actuelle(request, zone_id):
         'kc': kc,
         'etc_mm': etc_mm,
         'meteo_14j': meteo_14j,
+        'prediction_humidite': prediction_humidite,
         'decision': decision,
         'explication': explication,
     })
