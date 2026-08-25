@@ -84,12 +84,16 @@ class CapteurAdmin(admin.ModelAdmin):
                 humidite_pct=obj.derniere_humidite_pct,
                 temperature_c=obj.derniere_temperature_c,
             )
-            obj.generer_alerte_si_besoin()
             prendre_decision(
                 obj.zone,
                 humidite_pct=obj.derniere_humidite_pct,
                 temperature_c=obj.derniere_temperature_c or 28.0,
             )
+
+        # Verifie l'etat du capteur (maintenance/defaillant) a CHAQUE
+        # enregistrement, meme si l'humidite n'a pas change -- c'est ce
+        # qui manquait pour declencher l'alerte "maintenance".
+        obj.generer_alerte_si_besoin()
 
 
 admin.site.register(LectureCapteur)
