@@ -16,4 +16,5 @@ urlpatterns = [
     path('zones/<int:zone_id>/historique/', views.historique_capteur, name='historique-capteur'),
     path('zones/<int:zone_id>/meteo/', views.previsions_meteo, name='previsions-meteo'),
     path('zones/<int:zone_id>/decision/', views.decision_actuelle, name='decision-actuelle'),
+    path('cron/verifier-irrigation/', views.cron_verifier_irrigation_auto, name='cron-verifier-irrigation'),
 ]

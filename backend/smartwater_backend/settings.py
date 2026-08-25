@@ -141,3 +141,5 @@ MQTT_PASSWORD = config('MQTT_PASSWORD', default='')
 # --- SMS (Africa's Talking, optionnel en phase pilote) ---
 AFRICASTALKING_USERNAME = config('AFRICASTALKING_USERNAME', default='')
 AFRICASTALKING_API_KEY = config('AFRICASTALKING_API_KEY', default='')
+
+CRON_SECRET_KEY = config('CRON_SECRET_KEY', default='change-moi')

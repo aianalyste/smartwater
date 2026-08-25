@@ -302,6 +302,7 @@ class DecisionIrrigation(models.Model):
         ('reportee', "Irrigation reportee - pluie prevue suffisante"),
         ('irrigation', "Irrigation declenchee"),
         ('irrigation_manuelle', "Irrigation demarree manuellement"),
+        ('irrigation_automatique', "Irrigation demarree automatiquement (delai 1h depasse)"),
     ]
 
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='decisions')

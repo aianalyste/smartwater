@@ -50,10 +50,19 @@ def decision_actuelle(request, zone_id):
 
     derniere_decision = DecisionIrrigation.objects.filter(zone=zone).order_by('-date_heure').first()
 
+    date_decision_iso = None
+    delai_auto_secondes = None
+
     if capteurs_data is None:
         decision = 'indisponible'
         explication = "Pas de donnees capteurs -- decision impossible pour l'instant."
-    elif derniere_decision and derniere_decision.decision in ('irrigation', 'irrigation_manuelle'):
+    elif derniere_decision and derniere_decision.decision == 'irrigation':
+        # Decision en attente d'action -> le compte a rebours auto commence ici
+        decision = 'oui'
+        explication = derniere_decision.explication
+        date_decision_iso = derniere_decision.date_heure.isoformat()
+        delai_auto_secondes = 120  # 2 minutes pour le test -- A CHANGER en 3600 (1h) pour la prod
+    elif derniere_decision and derniere_decision.decision in ('irrigation_manuelle', 'irrigation_automatique'):
         decision = 'oui'
         explication = derniere_decision.explication
     else:
@@ -69,6 +78,8 @@ def decision_actuelle(request, zone_id):
         'prediction_humidite': prediction_humidite,
         'decision': decision,
         'explication': explication,
+        'date_decision': date_decision_iso,
+        'delai_auto_secondes': delai_auto_secondes,
     })
 
 
@@ -245,3 +256,28 @@ def historique_capteur(request, zone_id):
         ],
         'statistiques': stats,
     })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def cron_verifier_irrigation_auto(request):
+    """
+    GET /api/cron/verifier-irrigation/?cle=XXXX
+
+    Endpoint appele periodiquement par un service externe gratuit
+    (cron-job.org) pour declencher la verification du mode automatique
+    -- alternative gratuite au Cron Job payant de Render.
+
+    Protege par une cle secrete simple dans l'URL (pas une vraie
+    authentification, mais suffisant pour eviter les appels random).
+    """
+    from django.conf import settings
+
+    cle_fournie = request.GET.get('cle', '')
+    if cle_fournie != settings.CRON_SECRET_KEY:
+        return Response({'erreur': 'Cle invalide.'}, status=403)
+
+    from django.core.management import call_command
+    call_command('verifier_irrigation_auto')
+
+    return Response({'statut': 'verification effectuee'})

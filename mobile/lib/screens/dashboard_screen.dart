@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'demande_rattachement_screen.dart';
+import 'dart:async';
 
 /// Ecran Tableau de bord : humidite, temperature, statut de chaque
 /// zone, comme dans l'app de reference mais avec le statut par zone
@@ -273,11 +274,40 @@ class _BlocDecision extends StatefulWidget {
 
 class _BlocDecisionState extends State<_BlocDecision> {
   late Future<Map<String, dynamic>> _decisionFuture;
+  Timer? _timer;
+  Duration? _tempsRestant;
 
   @override
   void initState() {
     super.initState();
-    _decisionFuture = ApiService.getDecision(widget.zoneId);
+    _decisionFuture = ApiService.getDecision(widget.zoneId).then((data) {
+      _demarrerDecompte(data);
+      return data;
+    });
+  }
+
+  void _demarrerDecompte(Map<String, dynamic> data) {
+    final dateDecisionStr = data['date_decision'];
+    final delaiSecondes = data['delai_auto_secondes'];
+    if (dateDecisionStr == null || delaiSecondes == null) return;
+
+    final dateDecision = DateTime.parse(dateDecisionStr).toLocal();
+    final dateLimite = dateDecision.add(Duration(seconds: delaiSecondes));
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final restant = dateLimite.difference(DateTime.now());
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _tempsRestant = restant.isNegative ? Duration.zero : restant);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Color _couleurDecision(String decision) {
@@ -294,6 +324,12 @@ class _BlocDecisionState extends State<_BlocDecision> {
       case 'non': return 'PAS BESOIN';
       default: return 'INDISPONIBLE';
     }
+  }
+
+  String _formatDuree(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final secondes = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$secondes';
   }
 
   @override
@@ -339,6 +375,27 @@ class _BlocDecisionState extends State<_BlocDecision> {
                 ),
               const SizedBox(height: 4),
               Text(data['explication'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+
+              if (_tempsRestant != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                  child: Row(
+                    children: [
+                      Icon(Icons.timer_outlined, size: 16, color: _tempsRestant == Duration.zero ? AppColors.danger : couleur),
+                      const SizedBox(width: 8),
+                      Text(
+                        _tempsRestant == Duration.zero
+                            ? 'Declenchement automatique imminent'
+                            : 'Declenchement auto dans ${_formatDuree(_tempsRestant!)}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _tempsRestant == Duration.zero ? AppColors.danger : couleur),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 12),
               const Text('Meteo (14 prochains jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
@@ -370,7 +427,7 @@ class _BlocDecisionState extends State<_BlocDecision> {
                   },
                 ),
               ),
-               if ((data['prediction_humidite'] as List?)?.isNotEmpty == true) ...[
+              if ((data['prediction_humidite'] as List?)?.isNotEmpty == true) ...[
                 const SizedBox(height: 12),
                 const Text('Prediction humidite (5 jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
