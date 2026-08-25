@@ -276,6 +276,7 @@ class _BlocDecisionState extends State<_BlocDecision> {
   late Future<Map<String, dynamic>> _decisionFuture;
   Timer? _timer;
   Duration? _tempsRestant;
+  int? _delaiTotalSecondes;
 
   @override
   void initState() {
@@ -291,6 +292,7 @@ class _BlocDecisionState extends State<_BlocDecision> {
     final delaiSecondes = data['delai_auto_secondes'];
     if (dateDecisionStr == null || delaiSecondes == null) return;
 
+    _delaiTotalSecondes = delaiSecondes;
     final dateDecision = DateTime.parse(dateDecisionStr).toLocal();
     final dateLimite = dateDecision.add(Duration(seconds: delaiSecondes));
 
@@ -346,28 +348,23 @@ class _BlocDecisionState extends State<_BlocDecision> {
         final meteo14j = data['meteo_14j'] as List<dynamic>? ?? [];
 
         return Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: couleur.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: couleur.withOpacity(0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Text('Decision', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(20)),
-                    child: Text(_libelleDecision(decision),
-                        style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
-                  ),
-                ],
+              const Text('DECISION', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1)),
+              const SizedBox(height: 4),
+              Text(
+                _libelleDecision(decision),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: couleur, letterSpacing: 0.5),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+
               if (data['phase'] != null)
                 Text(
                   'Phase : ${data['phase']} — besoin en eau : ${data['etc_mm']?.toStringAsFixed(1) ?? '—'}mm/jour',
@@ -376,27 +373,19 @@ class _BlocDecisionState extends State<_BlocDecision> {
               const SizedBox(height: 4),
               Text(data['explication'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
 
-              if (_tempsRestant != null) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                  child: Row(
-                    children: [
-                      Icon(Icons.timer_outlined, size: 16, color: _tempsRestant == Duration.zero ? AppColors.danger : couleur),
-                      const SizedBox(width: 8),
-                      Text(
-                        _tempsRestant == Duration.zero
-                            ? 'Declenchement automatique imminent'
-                            : 'Declenchement auto dans ${_formatDuree(_tempsRestant!)}',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _tempsRestant == Duration.zero ? AppColors.danger : couleur),
-                      ),
-                    ],
+              if (_tempsRestant != null && _delaiTotalSecondes != null) ...[
+                const SizedBox(height: 18),
+                Center(
+                  child: _CercleDecompte(
+                    tempsRestant: _tempsRestant!,
+                    delaiTotalSecondes: _delaiTotalSecondes!,
+                    couleur: couleur,
+                    formatDuree: _formatDuree,
                   ),
                 ),
               ],
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               const Text('Meteo (14 prochains jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               SizedBox(
@@ -449,6 +438,66 @@ class _BlocDecisionState extends State<_BlocDecision> {
           ),
         );
       },
+    );
+  }
+}
+
+class _CercleDecompte extends StatelessWidget {
+  final Duration tempsRestant;
+  final int delaiTotalSecondes;
+  final Color couleur;
+  final String Function(Duration) formatDuree;
+
+  const _CercleDecompte({
+    required this.tempsRestant,
+    required this.delaiTotalSecondes,
+    required this.couleur,
+    required this.formatDuree,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final termine = tempsRestant == Duration.zero;
+    final progres = delaiTotalSecondes > 0
+        ? (tempsRestant.inSeconds / delaiTotalSecondes).clamp(0.0, 1.0)
+        : 0.0;
+    final couleurAffichee = termine ? AppColors.danger : couleur;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: 120,
+          height: 120,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(
+                  value: progres,
+                  strokeWidth: 8,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(couleurAffichee),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatDuree(tempsRestant),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: couleurAffichee),
+                  ),
+                  Text(
+                    termine ? 'declenchement...' : 'avant auto',
+                    style: TextStyle(fontSize: 10, color: couleurAffichee),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

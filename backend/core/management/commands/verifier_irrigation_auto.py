@@ -57,8 +57,8 @@ class Command(BaseCommand):
                 volume_irrigue_estime_l=volume_l,
                 duree_minutes=duree_min,
                 explication=(
-                    f"Irrigation declenchee automatiquement apres 1h sans action manuelle "
-                    f"(decision initiale du {decision.date_heure:%d/%m %H:%M})."
+                    f"Irrigation declenchee automatiquement (delai depasse sans action manuelle, "
+                    f"decision initiale du {decision.date_heure:%d/%m %H:%M})."
                 ),
             )
 
