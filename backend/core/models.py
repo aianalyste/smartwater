@@ -260,8 +260,6 @@ class Capteur(models.Model):
         if etat not in ('defaillant', 'maintenance'):
             return
 
-        # Evite de creer 10 alertes identiques d'affilee : une seule
-        # alerte non-lue par capteur et par type suffit.
         deja_existe = Alerte.objects.filter(
             device=self.device, type_alerte='panne_capteur', envoyee=False
         ).exists()
@@ -269,13 +267,17 @@ class Capteur(models.Model):
             return
 
         if etat == 'defaillant':
-            Alerte.objects.create(
-                zone=self.zone,
-                device=self.device,
-                type_alerte='panne_capteur',
-                message=f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} semble en panne (valeur figee ou pas de nouvelle donnee).",
-                canal='push',
-            )
+            message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} semble en panne (valeur figee ou pas de nouvelle donnee)."
+        else:  # maintenance
+            message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} est en maintenance."
+
+        Alerte.objects.create(
+            zone=self.zone,
+            device=self.device,
+            type_alerte='panne_capteur',
+            message=message,
+            canal='push',
+        )
 
 
 class LectureCapteur(models.Model):
