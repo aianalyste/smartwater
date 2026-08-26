@@ -92,3 +92,38 @@ class RapportEconomieEauSerializer(serializers.ModelSerializer):
     class Meta:
         model = RapportEconomieEau
         fields = '__all__'
+
+class DeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Device
+        fields = '__all__'
+
+
+class VanneAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vanne
+        fields = '__all__'
+
+
+class CapteurAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Capteur
+        fields = '__all__'
+
+
+class ParcelleAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Parcelle
+        fields = '__all__'
+
+
+class ZoneAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Zone
+        fields = '__all__'
+
+
+class UtilisateurAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Utilisateur
+        fields = ('id', 'nom', 'telephone', 'ville', 'localite', 'role', 'date_creation')

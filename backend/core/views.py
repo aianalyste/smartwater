@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from .models import Parcelle, Zone, DemandeRattachement, DecisionIrrigation, Utilisateur
+from .models import Parcelle, Zone, DemandeRattachement, DecisionIrrigation, Utilisateur, Culture
 from .serializers import (
     ParcelleSerializer, ZoneSerializer, DemandeRattachementSerializer,
     DecisionIrrigationSerializer, UtilisateurSerializer,
@@ -295,3 +295,142 @@ def mes_alertes(request):
     ).order_by('-date_creation')[:20]
 
     return Response(AlerteSerializer(alertes).data if False else AlerteSerializer(alertes, many=True).data)
+
+from rest_framework import generics as drf_generics
+from .permissions import EstAdminOuAgronome
+from .serializers import (
+    DeviceSerializer, VanneAdminSerializer, CapteurAdminSerializer,
+    ParcelleAdminSerializer, ZoneAdminSerializer, UtilisateurAdminSerializer,
+)
+from .models import Device, Vanne
+
+
+# ===== Onglet Options : gestion Cultures =====
+class AdminCultureListeView(drf_generics.ListCreateAPIView):
+    queryset = Culture.objects.all()
+    serializer_class = CultureSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+class AdminCultureDetailView(drf_generics.RetrieveUpdateDestroyAPIView):
+    queryset = Culture.objects.all()
+    serializer_class = CultureSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+# ===== Onglet Options : gestion Parcelles =====
+class AdminParcelleListeView(drf_generics.ListCreateAPIView):
+    queryset = Parcelle.objects.all()
+    serializer_class = ParcelleAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+class AdminParcelleDetailView(drf_generics.RetrieveUpdateDestroyAPIView):
+    queryset = Parcelle.objects.all()
+    serializer_class = ParcelleAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+# ===== Onglet Options : gestion Zones =====
+class AdminZoneListeView(drf_generics.ListCreateAPIView):
+    queryset = Zone.objects.all()
+    serializer_class = ZoneAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+class AdminZoneDetailView(drf_generics.RetrieveUpdateDestroyAPIView):
+    queryset = Zone.objects.all()
+    serializer_class = ZoneAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+# ===== Onglet Options : gestion Utilisateurs (role modifiable) =====
+class AdminUtilisateurListeView(drf_generics.ListAPIView):
+    queryset = Utilisateur.objects.all().order_by('-date_creation')
+    serializer_class = UtilisateurAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+class AdminUtilisateurDetailView(drf_generics.RetrieveUpdateDestroyAPIView):
+    queryset = Utilisateur.objects.all()
+    serializer_class = UtilisateurAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+# ===== Onglet Options : consultation Devices/Capteurs/Vannes =====
+class AdminDeviceListeView(drf_generics.ListAPIView):
+    queryset = Device.objects.all()
+    serializer_class = DeviceSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+class AdminCapteurListeView(drf_generics.ListAPIView):
+    queryset = Capteur.objects.all()
+    serializer_class = CapteurAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+class AdminVanneListeView(drf_generics.ListAPIView):
+    queryset = Vanne.objects.all()
+    serializer_class = VanneAdminSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+
+# ===== Onglet Options : demandes de rattachement en attente =====
+class AdminDemandesEnAttenteView(drf_generics.ListAPIView):
+    serializer_class = DemandeRattachementSerializer
+    permission_classes = [EstAdminOuAgronome]
+
+    def get_queryset(self):
+        return DemandeRattachement.objects.filter(statut='en_attente').order_by('-date_creation')
+
+
+@api_view(['POST'])
+@permission_classes([EstAdminOuAgronome])
+def valider_demande(request, demande_id):
+    """POST /api/options/demandes/<id>/valider/ -- {"parcelle_id": 3}"""
+    try:
+        demande = DemandeRattachement.objects.get(id=demande_id)
+    except DemandeRattachement.DoesNotExist:
+        return Response({'erreur': 'Demande introuvable.'}, status=404)
+
+    parcelle_id = request.data.get('parcelle_id')
+    if not parcelle_id:
+        return Response({'erreur': 'parcelle_id requis.'}, status=400)
+
+    try:
+        parcelle = Parcelle.objects.get(id=parcelle_id)
+    except Parcelle.DoesNotExist:
+        return Response({'erreur': 'Parcelle introuvable.'}, status=404)
+
+    from django.utils import timezone
+    demande.statut = 'validee'
+    demande.parcelle_liee = parcelle
+    demande.date_traitement = timezone.now()
+    demande.traite_par = request.user
+    demande.save()
+
+    # Associe aussi directement l'utilisateur comme proprietaire, pour
+    # que la parcelle apparaisse immediatement dans son app.
+    parcelle.proprietaire = demande.utilisateur
+    parcelle.save()
+
+    return Response({'statut': 'validee'})
+
+
+@api_view(['POST'])
+@permission_classes([EstAdminOuAgronome])
+def refuser_demande(request, demande_id):
+    """POST /api/options/demandes/<id>/refuser/"""
+    try:
+        demande = DemandeRattachement.objects.get(id=demande_id)
+    except DemandeRattachement.DoesNotExist:
+        return Response({'erreur': 'Demande introuvable.'}, status=404)
+
+    from django.utils import timezone
+    demande.statut = 'refusee'
+    demande.date_traitement = timezone.now()
+    demande.traite_par = request.user
+    demande.save()
+
+    return Response({'statut': 'refusee'})

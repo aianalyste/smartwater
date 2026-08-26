@@ -7,6 +7,7 @@ import '../main.dart' show apiBaseUrl;
 class SessionService {
   static const _cleToken = 'smartwater_session_token';
   static const _cleNom = 'smartwater_nom';
+  static const _cleRole = 'smartwater_role';
 
   static Future<void> inscrireOuConnecter({
     required String nom,
@@ -33,6 +34,7 @@ class SessionService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_cleToken, data['session_token']);
     await prefs.setString(_cleNom, data['nom'] ?? '');
+    await prefs.setString(_cleRole, data['role'] ?? 'agriculteur');
   }
 
   static Future<String?> getToken() async {
@@ -45,6 +47,16 @@ class SessionService {
     return prefs.getString(_cleNom);
   }
 
+  static Future<String> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_cleRole) ?? 'agriculteur';
+  }
+
+  static Future<bool> peutGererOptions() async {
+    final role = await getRole();
+    return role == 'admin' || role == 'agronome';
+  }
+
   static Future<bool> estConnecte() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
@@ -54,5 +66,6 @@ class SessionService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cleToken);
     await prefs.remove(_cleNom);
+    await prefs.remove(_cleRole);
   }
 }
