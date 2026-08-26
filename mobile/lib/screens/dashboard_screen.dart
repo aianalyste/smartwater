@@ -4,6 +4,8 @@ import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'demande_rattachement_screen.dart';
 import 'dart:async';
+import '../services/session_service.dart';
+import 'inscription_screen.dart';
 
 /// Ecran Tableau de bord : humidite, temperature, statut de chaque
 /// zone, comme dans l'app de reference mais avec le statut par zone
@@ -27,7 +29,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tableau de bord')),
+      appBar: AppBar(
+        title: const Text('Tableau de bord'),
+        actions: [
+          IconButton(
+      icon: const Icon(Icons.logout),
+      tooltip: 'Deconnexion',
+      onPressed: () async {
+        await SessionService.deconnecter();
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const InscriptionScreen()),
+            (route) => false,
+          );
+        }
+      },
+    ),
+  ],
+),
       body: FutureBuilder<List<dynamic>>(
         future: _parcellesFuture,
         builder: (context, snapshot) {
