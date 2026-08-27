@@ -33,4 +33,5 @@ urlpatterns = [
     path('options/demandes/', views.AdminDemandesEnAttenteView.as_view(), name='admin-demandes'),
     path('options/demandes/<int:demande_id>/valider/', views.valider_demande, name='valider-demande'),
     path('options/demandes/<int:demande_id>/refuser/', views.refuser_demande, name='refuser-demande'),
+    path('cron/rafraichir-meteo/', views.cron_rafraichir_meteo, name='cron-rafraichir-meteo'),
 ]

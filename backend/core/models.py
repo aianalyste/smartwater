@@ -99,6 +99,9 @@ class Parcelle(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
+    meteo_cache_14j = models.JSONField(null=True, blank=True, help_text="Cache des previsions 14 jours, rafraichi periodiquement")
+    meteo_cache_24h = models.JSONField(null=True, blank=True, help_text="Cache des previsions heure par heure (24h), rafraichi periodiquement")
+    meteo_cache_maj_le = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.nom} ({self.localisation})"

@@ -41,7 +41,15 @@ def decision_actuelle(request, zone_id):
     etc_mm, phase, kc = calculer_etc(zone, temperature)
 
     parcelle = zone.parcelle
-    meteo_14j = get_previsions_quotidiennes_2_semaines(parcelle.latitude, parcelle.longitude)
+        # Utilise le cache si disponible et recent (moins de 12h), sinon appel direct en secours
+    from django.utils import timezone as django_timezone
+    from datetime import timedelta as td
+
+    if parcelle.meteo_cache_14j and parcelle.meteo_cache_maj_le and \
+       parcelle.meteo_cache_maj_le > django_timezone.now() - td(hours=12):
+        meteo_14j = parcelle.meteo_cache_14j
+    else:
+        meteo_14j = get_previsions_quotidiennes_2_semaines(parcelle.latitude, parcelle.longitude)
 
     prediction_humidite = []
     if capteur:
@@ -86,8 +94,9 @@ def decision_actuelle(request, zone_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def previsions_meteo(request, zone_id):
-    """GET /api/zones/<id>/meteo/ — prévisions de pluie pour la parcelle."""
-    from irrigation.weather import get_previsions_pluie, prochaine_pluie_significative
+    """GET /api/zones/<id>/meteo/ — prévisions de pluie pour la parcelle (utilise le cache)."""
+    from django.utils import timezone as django_timezone
+    from datetime import timedelta as td
 
     try:
         zone = Zone.objects.get(id=zone_id, parcelle__proprietaire=request.user)
@@ -95,15 +104,22 @@ def previsions_meteo(request, zone_id):
         return Response({'erreur': 'Zone introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
     parcelle = zone.parcelle
-    previsions = get_previsions_pluie(parcelle.latitude, parcelle.longitude, heures=24)
-    prochaine = prochaine_pluie_significative(previsions)
+
+    if parcelle.meteo_cache_24h and parcelle.meteo_cache_maj_le and \
+       parcelle.meteo_cache_maj_le > django_timezone.now() - td(hours=12):
+        previsions = parcelle.meteo_cache_24h
+    else:
+        from irrigation.weather import get_previsions_pluie
+        brut = get_previsions_pluie(parcelle.latitude, parcelle.longitude, heures=24)
+        previsions = [{'heure': p['heure'].isoformat(), 'pluie_mm': p['pluie_mm'], 'probabilite_pct': p['probabilite_pct']} for p in brut]
+
+    prochaine = next((p for p in previsions if p['pluie_mm'] >= 2.0), None)
 
     return Response({
         'pluie_prevue': prochaine is not None,
-        'heure': prochaine['heure'].isoformat() if prochaine else None,
+        'heure': prochaine['heure'] if prochaine else None,
         'volume_mm': prochaine['pluie_mm'] if prochaine else 0,
     })
-
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -435,3 +451,18 @@ def refuser_demande(request, demande_id):
     demande.save()
 
     return Response({'statut': 'refusee'})
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def cron_rafraichir_meteo(request):
+    """GET /api/cron/rafraichir-meteo/?cle=XXXX -- a appeler toutes les 3h via cron-job.org."""
+    from django.conf import settings
+
+    cle_fournie = request.GET.get('cle', '')
+    if cle_fournie != settings.CRON_SECRET_KEY:
+        return Response({'erreur': 'Cle invalide.'}, status=403)
+
+    from django.core.management import call_command
+    call_command('rafraichir_meteo')
+
+    return Response({'statut': 'meteo rafraichie'})
