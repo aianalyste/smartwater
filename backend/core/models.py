@@ -99,9 +99,17 @@ class Parcelle(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
-    meteo_cache_14j = models.JSONField(null=True, blank=True, help_text="Cache des previsions 14 jours, rafraichi periodiquement")
-    meteo_cache_24h = models.JSONField(null=True, blank=True, help_text="Cache des previsions heure par heure (24h), rafraichi periodiquement")
-    meteo_cache_maj_le = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Trouve automatiquement les coordonnees GPS a partir du nom
+        # de la localite, si elles ne sont pas deja renseignees --
+        # evite d'avoir a connaitre/saisir des coordonnees manuellement.
+        if (self.latitude is None or self.longitude is None) and self.localisation:
+            from irrigation.geocodage import trouver_coordonnees
+            coordonnees = trouver_coordonnees(self.localisation)
+            if coordonnees:
+                self.latitude, self.longitude = coordonnees
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nom} ({self.localisation})"
@@ -132,6 +140,18 @@ class Culture(models.Model):
         default=70.0, help_text="Au dessus, le sol est considere gorge d'eau"
     )
 
+    def save(self, *args, **kwargs):
+        # Remplit automatiquement les Kc si le nom correspond a une
+        # culture connue et que les champs sont laisses par defaut
+        # (evite a l'utilisateur d'avoir a connaitre ces valeurs).
+        if self.nom and self.kc_initial == 0.5 and self.kc_mi_saison == 1.1:
+            from irrigation.cultures_reference import trouver_valeurs_reference
+            reference = trouver_valeurs_reference(self.nom)
+            if reference:
+                for champ, valeur in reference.items():
+                    setattr(self, champ, valeur)
+        super().save(*args, **kwargs)
+        
     def __str__(self):
         return self.nom
 

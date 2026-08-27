@@ -89,19 +89,22 @@ def get_previsions_quotidiennes_2_semaines(latitude, longitude):
     if latitude is None or longitude is None:
         latitude, longitude = 6.1319, 1.2228  # Lome par defaut
 
-    response = requests.get(
-        OPEN_METEO_URL,
-        params={
-            'latitude': latitude,
-            'longitude': longitude,
-            'daily': 'precipitation_sum,precipitation_probability_max',
-            'forecast_days': 14,
-            'timezone': 'Africa/Lome',
-        },
-        timeout=8,
-    )
-    response.raise_for_status()
-    data = response.json()
+    try:
+        response = requests.get(
+            OPEN_METEO_URL,
+            params={
+                'latitude': latitude,
+                'longitude': longitude,
+                'daily': 'precipitation_sum,precipitation_probability_max',
+                'forecast_days': 14,
+                'timezone': 'Africa/Lome',
+            },
+            timeout=8,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException:
+        return []
 
     dates = data.get('daily', {}).get('time', [])
     pluies = data.get('daily', {}).get('precipitation_sum', [])

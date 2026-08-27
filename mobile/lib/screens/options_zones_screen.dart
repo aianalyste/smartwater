@@ -45,6 +45,7 @@ class _OptionsZonesScreenState extends State<OptionsZonesScreen> {
       body: FutureBuilder<List<dynamic>>(
         future: _future,
         builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Erreur : ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final zones = snapshot.data!;
           return ListView.builder(
@@ -82,10 +83,10 @@ class _FormulaireZone extends StatefulWidget {
 class _FormulaireZoneState extends State<_FormulaireZone> {
   late final TextEditingController _nom;
   late final TextEditingController _codeTerrain;
-  late final TextEditingController _cultureId;
-  late final TextEditingController _parcelleId;
   late final TextEditingController _dateSemis;
   late final TextEditingController _superficie;
+  int? _cultureId;
+  int? _parcelleId;
 
   @override
   void initState() {
@@ -93,28 +94,54 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
     final z = widget.zone;
     _nom = TextEditingController(text: z?['nom'] ?? '');
     _codeTerrain = TextEditingController(text: z?['code_terrain'] ?? '');
-    _cultureId = TextEditingController(text: z?['culture']?.toString() ?? '');
-    _parcelleId = TextEditingController(text: z?['parcelle']?.toString() ?? '');
     _dateSemis = TextEditingController(text: z?['date_semis'] ?? '');
     _superficie = TextEditingController(text: z?['superficie_m2']?.toString() ?? '');
+    _cultureId = z?['culture'];
+    _parcelleId = z?['parcelle'];
   }
 
   Future<void> _sauvegarder() async {
-    final donnees = {
-      'nom': _nom.text,
-      'code_terrain': _codeTerrain.text,
-      'culture': int.tryParse(_cultureId.text),
-      'parcelle': int.tryParse(_parcelleId.text),
-      'date_semis': _dateSemis.text,
-      if (_superficie.text.isNotEmpty) 'superficie_m2': double.tryParse(_superficie.text),
-    };
-    if (widget.zone != null) {
-      await OptionsService.modifierZone(widget.zone!['id'], donnees);
-    } else {
-      await OptionsService.creerZone(donnees);
+    if (_cultureId == null || _parcelleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Choisis une culture et une parcelle.')));
+      return;
     }
-    widget.onSauvegarde();
-    if (mounted) Navigator.pop(context);
+    try {
+      final donnees = {
+        'nom': _nom.text,
+        'code_terrain': _codeTerrain.text,
+        'culture': _cultureId,
+        'parcelle': _parcelleId,
+        'date_semis': _dateSemis.text,
+        if (_superficie.text.isNotEmpty) 'superficie_m2': double.tryParse(_superficie.text),
+      };
+      if (widget.zone != null) {
+        await OptionsService.modifierZone(widget.zone!['id'], donnees);
+      } else {
+        await OptionsService.creerZone(donnees);
+      }
+      widget.onSauvegarde();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zone enregistree.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _choisirDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (date != null) {
+      _dateSemis.text = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      setState(() {});
+    }
   }
 
   @override
@@ -131,11 +158,42 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
             const SizedBox(height: 8),
             TextField(controller: _codeTerrain, decoration: const InputDecoration(labelText: 'Code terrain (ex: Z1)')),
             const SizedBox(height: 8),
-            TextField(controller: _parcelleId, decoration: const InputDecoration(labelText: 'ID Parcelle'), keyboardType: TextInputType.number),
+            FutureBuilder<List<dynamic>>(
+              future: widget.parcelles,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const LinearProgressIndicator();
+                return DropdownButtonFormField<int>(
+                  value: _parcelleId,
+                  decoration: const InputDecoration(labelText: 'Parcelle'),
+                  items: snapshot.data!.map<DropdownMenuItem<int>>((p) {
+                    return DropdownMenuItem<int>(value: p['id'], child: Text(p['nom']));
+                  }).toList(),
+                  onChanged: (v) => setState(() => _parcelleId = v),
+                );
+              },
+            ),
             const SizedBox(height: 8),
-            TextField(controller: _cultureId, decoration: const InputDecoration(labelText: 'ID Culture'), keyboardType: TextInputType.number),
+            FutureBuilder<List<dynamic>>(
+              future: widget.cultures,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const LinearProgressIndicator();
+                return DropdownButtonFormField<int>(
+                  value: _cultureId,
+                  decoration: const InputDecoration(labelText: 'Culture'),
+                  items: snapshot.data!.map<DropdownMenuItem<int>>((c) {
+                    return DropdownMenuItem<int>(value: c['id'], child: Text(c['nom']));
+                  }).toList(),
+                  onChanged: (v) => setState(() => _cultureId = v),
+                );
+              },
+            ),
             const SizedBox(height: 8),
-            TextField(controller: _dateSemis, decoration: const InputDecoration(labelText: 'Date de semis (AAAA-MM-JJ)')),
+            TextField(
+              controller: _dateSemis,
+              readOnly: true,
+              decoration: const InputDecoration(labelText: 'Date de semis', suffixIcon: Icon(Icons.calendar_today, size: 18)),
+              onTap: _choisirDate,
+            ),
             const SizedBox(height: 8),
             TextField(controller: _superficie, decoration: const InputDecoration(labelText: 'Superficie m2 (optionnel)'), keyboardType: TextInputType.number),
             const SizedBox(height: 20),

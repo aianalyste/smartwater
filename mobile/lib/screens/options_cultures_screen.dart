@@ -97,27 +97,30 @@ class _FormulaireCultureState extends State<_FormulaireCulture> {
     super.initState();
     final c = widget.culture;
     _nom = TextEditingController(text: c?['nom'] ?? '');
-    _kcInitial = TextEditingController(text: c?['kc_initial']?.toString() ?? '0.5');
-    _kcDev = TextEditingController(text: c?['kc_developpement']?.toString() ?? '0.7');
-    _kcMi = TextEditingController(text: c?['kc_mi_saison']?.toString() ?? '1.1');
-    _kcMat = TextEditingController(text: c?['kc_maturation']?.toString() ?? '0.8');
+   //  _kcInitial = TextEditingController(text: c?['kc_initial']?.toString() ?? '0.5');
+    // _kcDev = TextEditingController(text: c?['kc_developpement']?.toString() ?? '0.7');
+   //  _kcMi = TextEditingController(text: c?['kc_mi_saison']?.toString() ?? '1.1');
+    // _kcMat = TextEditingController(text: c?['kc_maturation']?.toString() ?? '0.8');
   }
 
   Future<void> _sauvegarder() async {
-    final donnees = {
-      'nom': _nom.text,
-      'kc_initial': double.tryParse(_kcInitial.text) ?? 0.5,
-      'kc_developpement': double.tryParse(_kcDev.text) ?? 0.7,
-      'kc_mi_saison': double.tryParse(_kcMi.text) ?? 1.1,
-      'kc_maturation': double.tryParse(_kcMat.text) ?? 0.8,
-    };
-    if (widget.culture != null) {
-      await OptionsService.modifierCulture(widget.culture!['id'], donnees);
-    } else {
-      await OptionsService.creerCulture(donnees);
+    try {
+      final donnees = {'nom': _nom.text};
+      if (widget.culture != null) {
+        await OptionsService.modifierCulture(widget.culture!['id'], donnees);
+      } else {
+        await OptionsService.creerCulture(donnees);
+      }
+      widget.onSauvegarde();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Culture enregistree.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red));
+      }
     }
-    widget.onSauvegarde();
-    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -128,16 +131,13 @@ class _FormulaireCultureState extends State<_FormulaireCulture> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(widget.culture != null ? 'Modifier la culture' : 'Nouvelle culture', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          const SizedBox(height: 8),
+          const Text(
+            'Ecris juste le nom (ex: Tomate, Mais, Piment, Oignon, Gombo) — les besoins en eau sont remplis automatiquement.',
+            style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire),
+          ),
           const SizedBox(height: 16),
-          TextField(controller: _nom, decoration: const InputDecoration(labelText: 'Nom')),
-          const SizedBox(height: 8),
-          TextField(controller: _kcInitial, decoration: const InputDecoration(labelText: 'Kc initial'), keyboardType: TextInputType.number),
-          const SizedBox(height: 8),
-          TextField(controller: _kcDev, decoration: const InputDecoration(labelText: 'Kc developpement'), keyboardType: TextInputType.number),
-          const SizedBox(height: 8),
-          TextField(controller: _kcMi, decoration: const InputDecoration(labelText: 'Kc mi-saison'), keyboardType: TextInputType.number),
-          const SizedBox(height: 8),
-          TextField(controller: _kcMat, decoration: const InputDecoration(labelText: 'Kc maturation'), keyboardType: TextInputType.number),
+          TextField(controller: _nom, decoration: const InputDecoration(labelText: 'Nom de la culture')),
           const SizedBox(height: 20),
           SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _sauvegarder, child: const Text('Enregistrer'))),
           const SizedBox(height: 20),

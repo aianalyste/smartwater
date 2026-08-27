@@ -12,11 +12,13 @@ class OptionsParcellesScreen extends StatefulWidget {
 
 class _OptionsParcellesScreenState extends State<OptionsParcellesScreen> {
   late Future<List<dynamic>> _future;
+  late Future<List<dynamic>> _utilisateurs;
 
   @override
   void initState() {
     super.initState();
     _rafraichir();
+    _utilisateurs = OptionsService.getUtilisateurs();
   }
 
   void _rafraichir() => setState(() => _future = OptionsService.getParcelles());
@@ -25,7 +27,7 @@ class _OptionsParcellesScreenState extends State<OptionsParcellesScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _FormulaireParcelle(parcelle: parcelle, onSauvegarde: _rafraichir),
+      builder: (_) => _FormulaireParcelle(parcelle: parcelle, utilisateurs: _utilisateurs, onSauvegarde: _rafraichir),
     );
   }
 
@@ -41,6 +43,7 @@ class _OptionsParcellesScreenState extends State<OptionsParcellesScreen> {
       body: FutureBuilder<List<dynamic>>(
         future: _future,
         builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Erreur : ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final parcelles = snapshot.data!;
           return ListView.builder(
@@ -78,8 +81,9 @@ class _OptionsParcellesScreenState extends State<OptionsParcellesScreen> {
 
 class _FormulaireParcelle extends StatefulWidget {
   final Map<String, dynamic>? parcelle;
+  final Future<List<dynamic>> utilisateurs;
   final VoidCallback onSauvegarde;
-  const _FormulaireParcelle({this.parcelle, required this.onSauvegarde});
+  const _FormulaireParcelle({this.parcelle, required this.utilisateurs, required this.onSauvegarde});
 
   @override
   State<_FormulaireParcelle> createState() => _FormulaireParcelleState();
@@ -88,9 +92,7 @@ class _FormulaireParcelle extends StatefulWidget {
 class _FormulaireParcelleState extends State<_FormulaireParcelle> {
   late final TextEditingController _nom;
   late final TextEditingController _localisation;
-  late final TextEditingController _proprietaireId;
-  late final TextEditingController _latitude;
-  late final TextEditingController _longitude;
+  int? _proprietaireId;
 
   @override
   void initState() {
@@ -98,19 +100,19 @@ class _FormulaireParcelleState extends State<_FormulaireParcelle> {
     final p = widget.parcelle;
     _nom = TextEditingController(text: p?['nom'] ?? '');
     _localisation = TextEditingController(text: p?['localisation'] ?? '');
-    _proprietaireId = TextEditingController(text: p?['proprietaire']?.toString() ?? '');
-    _latitude = TextEditingController(text: p?['latitude']?.toString() ?? '');
-    _longitude = TextEditingController(text: p?['longitude']?.toString() ?? '');
+    _proprietaireId = p?['proprietaire'];
   }
 
   Future<void> _sauvegarder() async {
+    if (_proprietaireId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Choisis un proprietaire.')));
+      return;
+    }
     try {
       final donnees = {
         'nom': _nom.text,
         'localisation': _localisation.text,
-        'proprietaire': int.tryParse(_proprietaireId.text),
-        if (_latitude.text.isNotEmpty) 'latitude': double.tryParse(_latitude.text),
-        if (_longitude.text.isNotEmpty) 'longitude': double.tryParse(_longitude.text),
+        'proprietaire': _proprietaireId,
       };
       if (widget.parcelle != null) {
         await OptionsService.modifierParcelle(widget.parcelle!['id'], donnees);
@@ -120,15 +122,11 @@ class _FormulaireParcelleState extends State<_FormulaireParcelle> {
       widget.onSauvegarde();
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Parcelle enregistree.')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Parcelle enregistree.')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -137,24 +135,44 @@ class _FormulaireParcelleState extends State<_FormulaireParcelle> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(widget.parcelle != null ? 'Modifier la parcelle' : 'Nouvelle parcelle', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-          const SizedBox(height: 16),
-          TextField(controller: _nom, decoration: const InputDecoration(labelText: 'Nom')),
-          const SizedBox(height: 8),
-          TextField(controller: _localisation, decoration: const InputDecoration(labelText: 'Localisation')),
-          const SizedBox(height: 8),
-          TextField(controller: _proprietaireId, decoration: const InputDecoration(labelText: 'ID Proprietaire (utilisateur)'), keyboardType: TextInputType.number),
-          const SizedBox(height: 8),
-          TextField(controller: _latitude, decoration: const InputDecoration(labelText: 'Latitude (optionnel)'), keyboardType: TextInputType.number),
-          const SizedBox(height: 8),
-          TextField(controller: _longitude, decoration: const InputDecoration(labelText: 'Longitude (optionnel)'), keyboardType: TextInputType.number),
-          const SizedBox(height: 20),
-          SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _sauvegarder, child: const Text('Enregistrer'))),
-          const SizedBox(height: 20),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.parcelle != null ? 'Modifier la parcelle' : 'Nouvelle parcelle', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            const SizedBox(height: 8),
+            const Text(
+              'Les coordonnees GPS sont trouvees automatiquement a partir de la localite.',
+              style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire),
+            ),
+            const SizedBox(height: 16),
+            TextField(controller: _nom, decoration: const InputDecoration(labelText: 'Nom')),
+            const SizedBox(height: 8),
+            TextField(controller: _localisation, decoration: const InputDecoration(labelText: 'Localisation (ex: Notse, Aneho...)')),
+            const SizedBox(height: 8),
+            FutureBuilder<List<dynamic>>(
+              future: widget.utilisateurs,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const LinearProgressIndicator();
+                final utilisateurs = snapshot.data!;
+                return DropdownButtonFormField<int>(
+                  value: _proprietaireId,
+                  decoration: const InputDecoration(labelText: 'Proprietaire'),
+                  items: utilisateurs.map<DropdownMenuItem<int>>((u) {
+                    return DropdownMenuItem<int>(
+                      value: u['id'],
+                      child: Text('${u['nom']} (${u['telephone']})'),
+                    );
+                  }).toList(),
+                  onChanged: (valeur) => setState(() => _proprietaireId = valeur),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _sauvegarder, child: const Text('Enregistrer'))),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
