@@ -303,7 +303,7 @@ from .serializers import (
     DeviceSerializer, VanneAdminSerializer, CapteurAdminSerializer,
     ParcelleAdminSerializer, ZoneAdminSerializer, UtilisateurAdminSerializer,
 )
-from .models import Device, Vanne
+from .models import Device, Vanne, Capteur
 
 
 # ===== Onglet Options : gestion Cultures =====
