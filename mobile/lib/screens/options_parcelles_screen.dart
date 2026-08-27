@@ -104,20 +104,33 @@ class _FormulaireParcelleState extends State<_FormulaireParcelle> {
   }
 
   Future<void> _sauvegarder() async {
-    final donnees = {
-      'nom': _nom.text,
-      'localisation': _localisation.text,
-      'proprietaire': int.tryParse(_proprietaireId.text),
-      if (_latitude.text.isNotEmpty) 'latitude': double.tryParse(_latitude.text),
-      if (_longitude.text.isNotEmpty) 'longitude': double.tryParse(_longitude.text),
-    };
-    if (widget.parcelle != null) {
-      await OptionsService.modifierParcelle(widget.parcelle!['id'], donnees);
-    } else {
-      await OptionsService.creerParcelle(donnees);
+    try {
+      final donnees = {
+        'nom': _nom.text,
+        'localisation': _localisation.text,
+        'proprietaire': int.tryParse(_proprietaireId.text),
+        if (_latitude.text.isNotEmpty) 'latitude': double.tryParse(_latitude.text),
+        if (_longitude.text.isNotEmpty) 'longitude': double.tryParse(_longitude.text),
+      };
+      if (widget.parcelle != null) {
+        await OptionsService.modifierParcelle(widget.parcelle!['id'], donnees);
+      } else {
+        await OptionsService.creerParcelle(donnees);
+      }
+      widget.onSauvegarde();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Parcelle enregistree.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+        );
+      }
     }
-    widget.onSauvegarde();
-    if (mounted) Navigator.pop(context);
   }
 
   @override
