@@ -49,6 +49,7 @@ class _OptionsDemandesScreenState extends State<OptionsDemandesScreen> {
       body: FutureBuilder<List<dynamic>>(
         future: _demandes,
         builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Erreur : ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final demandes = snapshot.data!;
           if (demandes.isEmpty) return const Center(child: Text('Aucune demande en attente.'));

@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from .models import Parcelle, Zone, DemandeRattachement, DecisionIrrigation, Utilisateur, Culture
 from .serializers import (
-    ParcelleSerializer, ZoneSerializer, DemandeRattachementSerializer,
+    CultureSerializer, ParcelleSerializer, ZoneSerializer, DemandeRattachementSerializer,
     DecisionIrrigationSerializer, UtilisateurSerializer,
 )
 from irrigation.water_savings import generer_rapport_economie_eau
@@ -291,7 +291,8 @@ def mes_alertes(request):
     from .serializers import AlerteSerializer
 
     alertes = Alerte.objects.filter(
-        zone__parcelle__proprietaire=request.user
+        zone__parcelle__proprietaire=request.user,
+        envoyee=False,
     ).order_by('-date_creation')[:20]
 
     return Response(AlerteSerializer(alertes).data if False else AlerteSerializer(alertes, many=True).data)

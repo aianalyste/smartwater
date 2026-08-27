@@ -253,31 +253,38 @@ class Capteur(models.Model):
         return 'normal'
 
     def generer_alerte_si_besoin(self):
-        """Cree une Alerte si l'etat du capteur le justifie (defaillant/maintenance)."""
+        """Cree une Alerte si necessaire, ou resout les alertes existantes
+        si l'etat redevient normal."""
         from .models import Alerte
 
         etat = self.etat_sante()
-        if etat not in ('defaillant', 'maintenance'):
-            return
 
-        deja_existe = Alerte.objects.filter(
-            device=self.device, type_alerte='panne_capteur', envoyee=False
-        ).exists()
-        if deja_existe:
-            return
+        if etat in ('defaillant', 'maintenance'):
+            deja_existe = Alerte.objects.filter(
+                device=self.device, type_alerte='panne_capteur', envoyee=False
+            ).exists()
+            if deja_existe:
+                return
 
-        if etat == 'defaillant':
-            message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} semble en panne (valeur figee ou pas de nouvelle donnee)."
-        else:  # maintenance
-            message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} est en maintenance."
+            if etat == 'defaillant':
+                message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} semble en panne (valeur figee ou pas de nouvelle donnee)."
+            else:
+                message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} est en maintenance."
 
-        Alerte.objects.create(
-            zone=self.zone,
-            device=self.device,
-            type_alerte='panne_capteur',
-            message=message,
-            canal='push',
-        )
+            Alerte.objects.create(
+                zone=self.zone,
+                device=self.device,
+                type_alerte='panne_capteur',
+                message=message,
+                canal='push',
+            )
+        else:
+            # Etat redevenu normal -> on marque les anciennes alertes
+            # comme resolues (envoyee=True), pour qu'elles disparaissent
+            # de l'affichage.
+            Alerte.objects.filter(
+                device=self.device, type_alerte='panne_capteur', envoyee=False
+            ).update(envoyee=True)
 
 
 class LectureCapteur(models.Model):
