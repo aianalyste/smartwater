@@ -45,8 +45,13 @@ def decision_actuelle(request, zone_id):
     from django.utils import timezone as django_timezone
     from datetime import timedelta as td
 
-    if parcelle.meteo_cache_14j and parcelle.meteo_cache_maj_le and \
-       parcelle.meteo_cache_maj_le > django_timezone.now() - td(hours=12):
+    cache_valide = (
+        parcelle.meteo_cache_14j and
+        isinstance(parcelle.meteo_cache_14j, list) and
+        parcelle.meteo_cache_maj_le and
+        parcelle.meteo_cache_maj_le > django_timezone.now() - td(hours=12)
+    )
+    if cache_valide:
         meteo_14j = parcelle.meteo_cache_14j
     else:
         meteo_14j = get_previsions_quotidiennes_2_semaines(parcelle.latitude, parcelle.longitude)
@@ -105,8 +110,13 @@ def previsions_meteo(request, zone_id):
 
     parcelle = zone.parcelle
 
-    if parcelle.meteo_cache_24h and parcelle.meteo_cache_maj_le and \
-       parcelle.meteo_cache_maj_le > django_timezone.now() - td(hours=12):
+    cache_valide = (
+        parcelle.meteo_cache_24h and
+        isinstance(parcelle.meteo_cache_24h, list) and
+        parcelle.meteo_cache_maj_le and
+        parcelle.meteo_cache_maj_le > django_timezone.now() - td(hours=12)
+    )
+    if cache_valide:
         previsions = parcelle.meteo_cache_24h
     else:
         from irrigation.weather import get_previsions_pluie
