@@ -52,7 +52,7 @@ class OptionsService {
       throw Exception('Erreur creation parcelle (${response.statusCode}) : ${response.body}');
     }
   }
-  }
+  
 
   static Future<void> modifierParcelle(int id, Map<String, dynamic> donnees) async {
     final response = await http.patch(Uri.parse('$apiBaseUrl/options/parcelles/$id/'), headers: await _headers(), body: jsonEncode(donnees));
