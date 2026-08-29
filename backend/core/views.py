@@ -476,3 +476,53 @@ def cron_rafraichir_meteo(request):
     call_command('rafraichir_meteo')
 
     return Response({'statut': 'meteo rafraichie'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def comparaison_decisions(request, zone_id):
+    """
+    GET /api/zones/<id>/comparaison-decisions/?jours=30
+
+    Compare, jour par jour, le volume irrigue par la plateforme
+    (intelligent, base sur meteo+phase+humidite) au volume qu'un
+    arrosage classique (sans intelligence, quotidien fixe) aurait
+    utilise -- argument visuel pour montrer l'economie d'eau.
+    """
+    from datetime import date, timedelta as td
+    from irrigation.fao56 import calculer_eto_simplifie
+
+    try:
+        zone = Zone.objects.get(id=zone_id, parcelle__proprietaire=request.user)
+    except Zone.DoesNotExist:
+        return Response({'erreur': 'Zone introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    nb_jours = int(request.query_params.get('jours', 30))
+    aujourd_hui = date.today()
+    superficie = zone.superficie_m2 or 50.0
+
+    # Volume classique de reference : ETc maximal (phase mi-saison),
+    # applique tous les jours sans exception -- ce qu'un arrosage
+    # manuel classique ferait, sans tenir compte de la meteo ni de la
+    # phase reelle de la culture.
+    eto_moyen = calculer_eto_simplifie(temperature_c=28)
+    volume_classique_jour = round(zone.culture.kc_mi_saison * eto_moyen * superficie, 1)
+
+    resultats = []
+    for i in range(nb_jours, -1, -1):
+        jour = aujourd_hui - td(days=i)
+
+        decisions_du_jour = DecisionIrrigation.objects.filter(
+            zone=zone,
+            date_heure__date=jour,
+            decision__in=['irrigation', 'irrigation_manuelle', 'irrigation_automatique'],
+        )
+        volume_systeme = sum(d.volume_irrigue_estime_l or 0 for d in decisions_du_jour)
+
+        resultats.append({
+            'date': jour.isoformat(),
+            'volume_systeme_l': round(volume_systeme, 1),
+            'volume_classique_l': volume_classique_jour,
+        })
+
+    return Response(resultats)

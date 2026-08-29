@@ -110,6 +110,17 @@ class ApiService {
     throw Exception('Erreur alertes (${response.statusCode})');
   }
 
+  static Future<List<dynamic>> getComparaisonDecisions(int zoneId, {int jours = 30}) async {
+    final response = await http.get(
+      Uri.parse('$apiBaseUrl/zones/$zoneId/comparaison-decisions/?jours=$jours'),
+      headers: await _headers(),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as List<dynamic>;
+    }
+    throw Exception('Erreur comparaison (${response.statusCode})');
+  }
+
 }
 
 

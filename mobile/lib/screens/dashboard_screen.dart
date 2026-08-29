@@ -6,6 +6,7 @@ import 'demande_rattachement_screen.dart';
 import 'dart:async';
 import '../services/session_service.dart';
 import 'inscription_screen.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 /// Ecran Tableau de bord : humidite, temperature, statut de chaque
 /// zone, comme dans l'app de reference mais avec le statut par zone
@@ -304,6 +305,7 @@ class _ZoneTuile extends StatelessWidget {
 
           const SizedBox(height: 16),
           _BlocDecision(zoneId: zone['id']),
+          _CourbeComparaison(zoneId: zone['id']),
         ],
       ),
     );
@@ -573,6 +575,106 @@ class _CercleDecompte extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _CourbeComparaison extends StatefulWidget {
+  final int zoneId;
+  const _CourbeComparaison({required this.zoneId});
+
+  @override
+  State<_CourbeComparaison> createState() => _CourbeComparaisonState();
+}
+
+class _CourbeComparaisonState extends State<_CourbeComparaison> {
+  late Future<List<dynamic>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ApiService.getComparaisonDecisions(widget.zoneId, jours: 14);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+        final donnees = snapshot.data!;
+
+        return Container(
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('SmartWater vs Arrosage classique', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  _legende('Systeme intelligent', AppColors.vertPrincipal),
+                  const SizedBox(width: 16),
+                  _legende('Arrosage classique', Colors.grey),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 160,
+                child: BarChart(
+                  BarChartData(
+                    gridData: const FlGridData(show: false),
+                    borderData: FlBorderData(show: false),
+                    titlesData: const FlTitlesData(
+                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    barGroups: [
+                      for (int i = 0; i < donnees.length; i++)
+                        BarChartGroupData(
+                          x: i,
+                          barRods: [
+                            BarChartRodData(
+                              toY: (donnees[i]['volume_systeme_l'] as num).toDouble(),
+                              color: AppColors.vertPrincipal,
+                              width: 5,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            BarChartRodData(
+                              toY: (donnees[i]['volume_classique_l'] as num).toDouble(),
+                              color: Colors.grey.shade300,
+                              width: 5,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _legende(String texte, Color couleur) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 4),
+        Text(texte, style: const TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
       ],
     );
   }
