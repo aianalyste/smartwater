@@ -136,7 +136,8 @@ class _FormulaireParcelleState extends State<_FormulaireParcelle> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
       child: SingleChildScrollView(
-        child: Column(
+        child: ConteneurFormulaire(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(widget.parcelle != null ? 'Modifier la parcelle' : 'Nouvelle parcelle', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
@@ -174,6 +175,7 @@ class _FormulaireParcelleState extends State<_FormulaireParcelle> {
           ],
         ),
       ),
+      )
     );
   }
 }

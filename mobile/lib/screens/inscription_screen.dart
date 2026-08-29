@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../services/session_service.dart';
 import 'home_shell.dart';
+import '../widgets/conteneur_formulaire.dart';
 
 class InscriptionScreen extends StatefulWidget {
   const InscriptionScreen({super.key});
@@ -58,7 +59,9 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Column( 
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset('assets/logo.png', height: 100),
@@ -127,6 +130,8 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
           ),
         ),
       ),
+      )
     );
+    
   }
 }

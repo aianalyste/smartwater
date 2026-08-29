@@ -27,27 +27,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _parcellesFuture = ApiService.getMesParcelles();
   }
 
-    @override
+     @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tableau de bord'),
+        backgroundColor: AppColors.fondClair,
         actions: [
           IconButton(
-      icon: const Icon(Icons.logout),
-      tooltip: 'Deconnexion',
-      onPressed: () async {
-        await SessionService.deconnecter();
-        if (context.mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const InscriptionScreen()),
-            (route) => false,
-          );
-        }
-      },
-    ),
-  ],
-),
+            icon: const Icon(Icons.logout),
+            tooltip: 'Deconnexion',
+            onPressed: () async {
+              await SessionService.deconnecter();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const InscriptionScreen()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(28),
+          child: Container(
+            height: 28,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.vertClair.withOpacity(0.15),
+                  AppColors.vertPrincipal.withOpacity(0.05),
+                ],
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                9,
+                (i) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Icon(
+                    Icons.eco,
+                    size: 12,
+                    color: AppColors.vertPrincipal.withOpacity(0.35),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       body: FutureBuilder<List<dynamic>>(
         future: _parcellesFuture,
         builder: (context, snapshot) {
@@ -628,8 +657,8 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
               const SizedBox(height: 12),
               SizedBox(
                 height: 160,
-                child: BarChart(
-                  BarChartData(
+                child: LineChart(
+                  LineChartData(
                     gridData: const FlGridData(show: false),
                     borderData: FlBorderData(show: false),
                     titlesData: const FlTitlesData(
@@ -638,25 +667,29 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
                       topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                    barGroups: [
-                      for (int i = 0; i < donnees.length; i++)
-                        BarChartGroupData(
-                          x: i,
-                          barRods: [
-                            BarChartRodData(
-                              toY: (donnees[i]['volume_systeme_l'] as num).toDouble(),
-                              color: AppColors.vertPrincipal,
-                              width: 5,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            BarChartRodData(
-                              toY: (donnees[i]['volume_classique_l'] as num).toDouble(),
-                              color: Colors.grey.shade300,
-                              width: 5,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ],
-                        ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: [
+                          for (int i = 0; i < donnees.length; i++)
+                            FlSpot(i.toDouble(), (donnees[i]['volume_systeme_l'] as num).toDouble()),
+                        ],
+                        isCurved: true,
+                        color: AppColors.vertPrincipal,
+                        barWidth: 3,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(show: true, color: AppColors.vertPrincipal.withOpacity(0.08)),
+                      ),
+                      LineChartBarData(
+                        spots: [
+                          for (int i = 0; i < donnees.length; i++)
+                            FlSpot(i.toDouble(), (donnees[i]['volume_classique_l'] as num).toDouble()),
+                        ],
+                        isCurved: true,
+                        color: Colors.grey.shade400,
+                        barWidth: 3,
+                        dotData: const FlDotData(show: false),
+                        dashArray: [6, 4],
+                      ),
                     ],
                   ),
                 ),

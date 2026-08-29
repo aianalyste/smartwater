@@ -149,6 +149,7 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
       child: SingleChildScrollView(
+        child: ConteneurFormulaire(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -202,6 +203,7 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
           ],
         ),
       ),
+      )
     );
   }
 }

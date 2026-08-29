@@ -127,6 +127,7 @@ class _FormulaireCultureState extends State<_FormulaireCulture> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
+      child: ConteneurFormulaire(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -143,6 +144,7 @@ class _FormulaireCultureState extends State<_FormulaireCulture> {
           const SizedBox(height: 20),
         ],
       ),
+      )
     );
   }
 }
