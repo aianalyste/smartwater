@@ -634,9 +634,14 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
         if (!snapshot.hasData) return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
         final donnees = snapshot.data!;
 
+        final maxSysteme = donnees.map((d) => (d['volume_systeme_l'] as num).toDouble()).fold(0.0, (a, b) => a > b ? a : b);
+        final maxClassique = donnees.map((d) => (d['volume_classique_l'] as num).toDouble()).fold(0.0, (a, b) => a > b ? a : b);
+        final maxY = (maxSysteme > maxClassique ? maxSysteme : maxClassique) * 1.2 + 1;
+
         return Container(
+          width: double.infinity,
           margin: const EdgeInsets.only(top: 16),
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
@@ -646,49 +651,82 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('SmartWater vs Arrosage classique', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
+              Text('Volume d\'eau utilise par jour (litres)', style: TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   _legende('Systeme intelligent', AppColors.vertPrincipal),
                   const SizedBox(width: 16),
-                  _legende('Arrosage classique', Colors.grey),
+                  _legende('Arrosage classique', Colors.grey.shade500),
                 ],
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 160,
+                height: 140,
                 child: LineChart(
                   LineChartData(
-                    gridData: const FlGridData(show: false),
+                    minY: 0,
+                    maxY: maxY,
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: maxY / 4,
+                      getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+                    ),
                     borderData: FlBorderData(show: false),
-                    titlesData: const FlTitlesData(
-                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          interval: maxY / 4 == 0 ? 1 : maxY / 4,
+                          getTitlesWidget: (value, meta) => Text(
+                            value.toStringAsFixed(0),
+                            style: const TextStyle(fontSize: 9, color: AppColors.texteSecondaire),
+                          ),
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 22,
+                          interval: (donnees.length / 4).ceilToDouble().clamp(1, double.infinity),
+                          getTitlesWidget: (value, meta) {
+                            final i = value.toInt();
+                            if (i < 0 || i >= donnees.length) return const SizedBox.shrink();
+                            final date = DateTime.tryParse(donnees[i]['date'] ?? '');
+                            if (date == null) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text('${date.day}/${date.month}', style: const TextStyle(fontSize: 9, color: AppColors.texteSecondaire)),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                     lineBarsData: [
                       LineChartBarData(
                         spots: [
                           for (int i = 0; i < donnees.length; i++)
-                            FlSpot(i.toDouble(), (donnees[i]['volume_systeme_l'] as num).toDouble()),
+                            FlSpot(i.toDouble(), (donnees[i]['volume_classique_l'] as num).toDouble()),
                         ],
-                        isCurved: true,
-                        color: AppColors.vertPrincipal,
-                        barWidth: 3,
+                        isCurved: false,
+                        color: Colors.grey.shade400,
+                        barWidth: 2,
                         dotData: const FlDotData(show: false),
-                        belowBarData: BarAreaData(show: true, color: AppColors.vertPrincipal.withOpacity(0.08)),
                       ),
                       LineChartBarData(
                         spots: [
                           for (int i = 0; i < donnees.length; i++)
-                            FlSpot(i.toDouble(), (donnees[i]['volume_classique_l'] as num).toDouble()),
+                            FlSpot(i.toDouble(), (donnees[i]['volume_systeme_l'] as num).toDouble()),
                         ],
-                        isCurved: true,
-                        color: Colors.grey.shade400,
+                        isCurved: false,
+                        color: AppColors.vertPrincipal,
                         barWidth: 3,
                         dotData: const FlDotData(show: false),
-                        dashArray: [6, 4],
                       ),
                     ],
                   ),
@@ -705,7 +743,7 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(2))),
+        Container(width: 10, height: 3, color: couleur),
         const SizedBox(width: 4),
         Text(texte, style: const TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
       ],
