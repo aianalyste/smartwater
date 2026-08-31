@@ -88,6 +88,7 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
   late final TextEditingController _superficie;
   int? _cultureId;
   int? _parcelleId;
+  String _modeCalcul = 'date_semis';
 
   @override
   void initState() {
@@ -99,6 +100,7 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
     _superficie = TextEditingController(text: z?['superficie_m2']?.toString() ?? '');
     _cultureId = z?['culture'];
     _parcelleId = z?['parcelle'];
+    _modeCalcul = z?['mode_calcul_phase'] ?? 'date_semis';
   }
 
   Future<void> _sauvegarder() async {
@@ -113,6 +115,7 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
         'culture': _cultureId,
         'parcelle': _parcelleId,
         'date_semis': _dateSemis.text,
+        'mode_calcul_phase': _modeCalcul,
         if (_superficie.text.isNotEmpty) 'superficie_m2': double.tryParse(_superficie.text),
       };
       if (widget.zone != null) {
@@ -145,7 +148,7 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
     }
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
@@ -198,6 +201,16 @@ class _FormulaireZoneState extends State<_FormulaireZone> {
             ),
             const SizedBox(height: 8),
             TextField(controller: _superficie, decoration: const InputDecoration(labelText: 'Superficie m2 (optionnel)'), keyboardType: TextInputType.number),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _modeCalcul,
+              decoration: const InputDecoration(labelText: 'Mode de calcul de la phase'),
+              items: const [
+                DropdownMenuItem(value: 'date_semis', child: Text('Date de semis')),
+                DropdownMenuItem(value: 'capteur', child: Text('Capteur phenologique (NDVI)')),
+              ],
+              onChanged: (v) => setState(() => _modeCalcul = v ?? 'date_semis'),
+            ),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _sauvegarder, child: const Text('Enregistrer'))),
             const SizedBox(height: 20),

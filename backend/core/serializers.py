@@ -36,8 +36,8 @@ class CapteurSerializer(serializers.ModelSerializer):
         model = Capteur
         fields = ('id', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c',
                    'derniere_lecture', 'etat', 'dernier_ph', 'dernier_azote_ppm',
-                   'dernier_phosphore_ppm', 'dernier_potassium_ppm', 'conseil_fertilisation')
-
+                   'dernier_phosphore_ppm', 'dernier_potassium_ppm', 'conseil_fertilisation',
+                   'dernier_ndvi')
     def get_etat(self, obj):
         return obj.etat_sante()
 
@@ -53,11 +53,10 @@ class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
         fields = ('id', 'nom', 'culture', 'superficie_m2', 'date_semis',
-                  'vanne', 'capteurs', 'phase_actuelle')
+                  'vanne', 'capteurs', 'phase_actuelle', 'mode_calcul_phase')
 
     def get_phase_actuelle(self, obj):
-        phase, kc = obj.phase_actuelle()
-        return {'phase': phase, 'kc': kc}
+        return obj.phase_actuelle()
 
 
 class ParcelleSerializer(serializers.ModelSerializer):

@@ -185,20 +185,35 @@ class Zone(models.Model):
         choices=[('date_semis', 'Calculee via date de semis'), ('capteur_spectral', 'Detectee par capteur AS7265x')],
         default='date_semis',
     )
+    MODE_CALCUL_CHOICES = [
+        ('date_semis', 'Date de semis'),
+        ('capteur', 'Capteur phenologique (NDVI)'),
+    ]
+    mode_calcul_phase = models.CharField(max_length=15, choices=MODE_CALCUL_CHOICES, default='date_semis')
 
     def __str__(self):
         return f"{self.nom} - {self.parcelle.nom} ({self.culture.nom})"
 
     def phase_actuelle(self, aujourdhui=None):
         """
-        Calcule la phase phenologique actuelle a partir de la date de
-        semis, si aucune lecture recente du capteur spectral n'est
-        disponible. Voir irrigation/fao56.py pour le detail du calcul.
+        Calcule la phase phenologique actuelle selon le mode choisi
+        pour cette zone (date de semis, ou capteur phenologique).
         """
+        if self.mode_calcul_phase == 'capteur':
+            from irrigation.phenologie_capteur import deduire_phase_ndvi
+            capteur_spectral = self.capteurs.filter(type_capteur='spectral_phenologique').first()
+            resultat = deduire_phase_ndvi(capteur_spectral) if capteur_spectral else None
+            if resultat:
+                return resultat
+            # Pas encore assez de donnees capteur -> secours sur la date de semis
+            from irrigation.fao56 import calculer_phase_phenologique
+            phase, kc = calculer_phase_phenologique(self, aujourdhui)
+            return {'phase': phase, 'kc': kc, 'source': 'date_semis_secours',
+                    'explication': "Pas encore assez de donnees du capteur -- phase estimee par la date de semis en attendant."}
+
         from irrigation.fao56 import calculer_phase_phenologique
-        return calculer_phase_phenologique(self, aujourdhui)
-
-
+        phase, kc = calculer_phase_phenologique(self, aujourdhui)
+        return {'phase': phase, 'kc': kc, 'source': 'date_semis'}
 # =========================================================
 # MATERIEL : DEVICES, CAPTEURS, VANNES
 # =========================================================
@@ -253,6 +268,7 @@ class Capteur(models.Model):
     dernier_azote_ppm = models.FloatField(null=True, blank=True, help_text="Azote (N)")
     dernier_phosphore_ppm = models.FloatField(null=True, blank=True, help_text="Phosphore (P)")
     dernier_potassium_ppm = models.FloatField(null=True, blank=True, help_text="Potassium (K)")
+    dernier_ndvi = models.FloatField(null=True, blank=True, help_text="Indice de vegetation calcule (capteur spectral)")
 
     def __str__(self):
         return f"{self.get_type_capteur_display()} - {self.zone.nom}"
@@ -372,6 +388,7 @@ class LectureCapteur(models.Model):
     capteur = models.ForeignKey(Capteur, on_delete=models.CASCADE, related_name='lectures')
     humidite_pct = models.FloatField(null=True, blank=True)
     temperature_c = models.FloatField(null=True, blank=True)
+    ndvi = models.FloatField(null=True, blank=True)
     horodatage = models.DateTimeField(auto_now_add=True)
 
     class Meta:

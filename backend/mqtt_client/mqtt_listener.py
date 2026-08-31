@@ -152,6 +152,44 @@ def _traiter_lecture(device, zone_code, humidite_pct, temperature_c, extra=None,
     if humidite_pct is not None:
         prendre_decision(zone, humidite_pct=humidite_pct, temperature_c=temperature_c or 28.0)
 
+def _traiter_lecture_spectrale(device, zone_code, payload):
+    """
+    Traite une lecture du capteur spectral (NDVI). Format attendu :
+        {"zone_code": "Z1", "type": "spectral_phenologique", "ndvi": 0.65}
+    ou, si le NDVI n'est pas calcule cote firmware, avec les bandes brutes :
+        {"zone_code": "Z1", "type": "spectral_phenologique", "rouge": 120, "nir": 480}
+    """
+    django.setup()
+    from core.models import Capteur, LectureCapteur, Zone
+
+    try:
+        zone = Zone.objects.get(code_terrain=zone_code)
+    except Zone.DoesNotExist:
+        print(f"[MQTT] zone_code inconnu : {zone_code}")
+        return
+
+    capteur = Capteur.objects.filter(zone=zone, type_capteur='spectral_phenologique').first()
+    if not capteur:
+        print(f"[MQTT] Aucun capteur spectral configure pour la zone {zone_code}")
+        return
+
+    ndvi = payload.get('ndvi')
+    if ndvi is None and 'rouge' in payload and 'nir' in payload:
+        rouge, nir = payload['rouge'], payload['nir']
+        if (nir + rouge) > 0:
+            ndvi = (nir - rouge) / (nir + rouge)
+
+    if ndvi is None:
+        print(f"[MQTT] Lecture spectrale sans NDVI calculable pour {zone_code}")
+        return
+
+    from django.utils import timezone
+    capteur.dernier_ndvi = ndvi
+    capteur.derniere_lecture = timezone.now()
+    capteur.save()
+
+    LectureCapteur.objects.create(capteur=capteur, ndvi=ndvi)
+
 
 def on_message(client, userdata, msg):
     django.setup()
@@ -183,12 +221,16 @@ def on_message(client, userdata, msg):
 
         # payload attendu : tableau [{"zone_code": "Z1", "humidite_pct":.., "temperature_c":..}, ...]
         for lecture in payload:
-            extra = {k: v for k, v in lecture.items() if k in ('ph', 'azote_ppm', 'phosphore_ppm', 'potassium_ppm')}
-            _traiter_lecture(
-                device, lecture.get('zone_code'),
-                lecture.get('humidite_pct'), lecture.get('temperature_c'),
-                extra=extra if extra else None,
-            )
+            type_lecture = lecture.get('type', 'humidite_temperature')
+            if type_lecture == 'spectral_phenologique':
+                _traiter_lecture_spectrale(device, lecture.get('zone_code'), lecture)
+            else:
+                extra = {k: v for k, v in lecture.items() if k in ('ph', 'azote_ppm', 'phosphore_ppm', 'potassium_ppm')}
+                _traiter_lecture(
+                    device, lecture.get('zone_code'),
+                    lecture.get('humidite_pct'), lecture.get('temperature_c'),
+                    extra=extra if extra else None,
+                )
 
     elif canal == 'capteurs_differe':
         maintenant = timezone.now()

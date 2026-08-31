@@ -53,7 +53,7 @@ class CultureAdmin(admin.ModelAdmin):
 
 @admin.register(Zone)
 class ZoneAdmin(admin.ModelAdmin):
-    list_display = ('nom', 'code_terrain', 'parcelle', 'culture', 'date_semis')
+    list_display = ('nom', 'code_terrain', 'parcelle', 'culture', 'date_semis', 'mode_calcul_phase')
     list_filter = ('culture',)
 
 
@@ -68,7 +68,7 @@ class CapteurAdmin(admin.ModelAdmin):
     list_display = ('type_capteur', 'zone', 'derniere_humidite_pct', 'derniere_lecture')
     fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c',
                'dernier_ph', 'dernier_azote_ppm', 'dernier_phosphore_ppm', 'dernier_potassium_ppm',
-               'statut_maintenance')
+               'dernier_ndvi', 'statut_maintenance')
 
     def save_model(self, request, obj, form, change):
         if obj.type_capteur == 'humidite_temperature' and obj.derniere_humidite_pct is not None:

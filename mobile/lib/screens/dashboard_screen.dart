@@ -8,6 +8,17 @@ import '../services/session_service.dart';
 import 'inscription_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+String _tempsRelatif(String? isoDate) {
+  if (isoDate == null) return 'Aucune donnee recue';
+  final date = DateTime.tryParse(isoDate);
+  if (date == null) return 'Aucune donnee recue';
+  final diff = DateTime.now().difference(date.toLocal());
+  if (diff.inMinutes < 1) return 'A l\'instant';
+  if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'Il y a ${diff.inHours}h';
+  return 'Il y a ${diff.inDays}j';
+}
+
 /// Ecran Tableau de bord : humidite, temperature, statut de chaque
 /// zone, comme dans l'app de reference mais avec le statut par zone
 /// (multi-zones) et un indicateur de la decision du jour.
@@ -260,6 +271,9 @@ class _ZoneTuile extends StatelessWidget {
   Widget build(BuildContext context) {
     final capteurs = zone['capteurs'] as List<dynamic>? ?? [];
     final phase = zone['phase_actuelle']?['phase'] ?? '-';
+    final source = zone['phase_actuelle']?['source'];
+    final ndviActuel = zone['phase_actuelle']?['ndvi_actuel'];
+    final ndviPic = zone['phase_actuelle']?['ndvi_pic'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -275,9 +289,26 @@ class _ZoneTuile extends StatelessWidget {
           Text('${zone['nom']} — ${zone['culture']?['nom'] ?? ''}',
               style:
                   const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-          Text('Phase : $phase',
+          Text(
+            'Phase : $phase (${source == 'capteur' ? 'via capteur' : source == 'date_semis_secours' ? 'capteur -> secours date' : 'via date de semis'})',
+            style: const TextStyle(
+                fontSize: 12, color: AppColors.texteSecondaire),
+          ),
+          if (ndviActuel != null)
+            Text(
+              'NDVI actuel : $ndviActuel (pic : $ndviPic)',
               style: const TextStyle(
-                  fontSize: 12, color: AppColors.texteSecondaire)),
+                  fontSize: 11, color: AppColors.texteSecondaire),
+            ),
+          const SizedBox(height: 4),
+          if (capteurs.isNotEmpty)
+            Text(
+              'Derniere mise a jour : ${_tempsRelatif(capteurs[0]['derniere_lecture'])}',
+              style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.texteSecondaire,
+                  fontStyle: FontStyle.italic),
+            ),
           const SizedBox(height: 14),
           const Text('Etat des capteurs',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
