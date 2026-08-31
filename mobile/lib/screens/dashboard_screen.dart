@@ -27,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _parcellesFuture = ApiService.getMesParcelles();
   }
 
-     @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -140,15 +140,21 @@ class _BandeauAlertesState extends State<_BandeauAlertes> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 18),
+                  const Icon(Icons.warning_amber_rounded,
+                      color: AppColors.danger, size: 18),
                   const SizedBox(width: 8),
-                  Text('${alertes.length} alerte(s)', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.danger)),
+                  Text('${alertes.length} alerte(s)',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.danger)),
                 ],
               ),
               const SizedBox(height: 8),
               ...alertes.take(3).map((a) => Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text('• ${a['message']}', style: const TextStyle(fontSize: 12, color: AppColors.danger)),
+                    child: Text('• ${a['message']}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.danger)),
                   )),
             ],
           ),
@@ -157,7 +163,6 @@ class _BandeauAlertesState extends State<_BandeauAlertes> {
     );
   }
 }
-
 
 class _AucuneParcelleVue extends StatelessWidget {
   const _AucuneParcelleVue();
@@ -170,7 +175,8 @@ class _AucuneParcelleVue extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.map_outlined, size: 56, color: AppColors.texteSecondaire),
+            const Icon(Icons.map_outlined,
+                size: 56, color: AppColors.texteSecondaire),
             const SizedBox(height: 16),
             const Text(
               'Aucune parcelle associee a votre compte',
@@ -181,7 +187,8 @@ class _AucuneParcelleVue extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const DemandeRattachementScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const DemandeRattachementScreen()),
               ),
               child: const Text('Demander l\'acces a une parcelle'),
             ),
@@ -225,19 +232,27 @@ class _ZoneTuile extends StatelessWidget {
 
   String _libelleEtat(String etat) {
     switch (etat) {
-      case 'normal': return 'Normal';
-      case 'maintenance': return 'Maintenance';
-      case 'defaillant': return 'Defaillant';
-      default: return 'Pas de donnees';
+      case 'normal':
+        return 'Normal';
+      case 'maintenance':
+        return 'Maintenance';
+      case 'defaillant':
+        return 'Defaillant';
+      default:
+        return 'Pas de donnees';
     }
   }
 
   Color _couleurEtat(String etat) {
     switch (etat) {
-      case 'normal': return AppColors.vertPrincipal;
-      case 'maintenance': return AppColors.alerte;
-      case 'defaillant': return AppColors.danger;
-      default: return AppColors.texteSecondaire;
+      case 'normal':
+        return AppColors.vertPrincipal;
+      case 'maintenance':
+        return AppColors.alerte;
+      case 'defaillant':
+        return AppColors.danger;
+      default:
+        return AppColors.texteSecondaire;
     }
   }
 
@@ -258,11 +273,14 @@ class _ZoneTuile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${zone['nom']} — ${zone['culture']?['nom'] ?? ''}',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-          Text('Phase : $phase', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          Text('Phase : $phase',
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.texteSecondaire)),
           const SizedBox(height: 14),
-
-          const Text('Etat des capteurs', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          const Text('Etat des capteurs',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           if (capteurs.isEmpty)
             _cartePasDeDonnees()
@@ -272,7 +290,8 @@ class _ZoneTuile extends StatelessWidget {
               final couleur = _couleurEtat(etat);
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: couleur.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
@@ -280,51 +299,40 @@ class _ZoneTuile extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      c['type_capteur'] == 'humidite_temperature' ? Icons.water_drop_outlined : Icons.sensors,
-                      size: 16, color: couleur,
+                      c['type_capteur'] == 'humidite_temperature'
+                          ? Icons.water_drop_outlined
+                          : Icons.sensors,
+                      size: 16,
+                      color: couleur,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        c['type_capteur'] == 'humidite_temperature' ? 'Humidite / Temperature' : 'Capteur spectral',
+                        c['type_capteur'] == 'humidite_temperature'
+                            ? 'Humidite / Temperature'
+                            : 'Capteur spectral',
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: couleur, borderRadius: BorderRadius.circular(20)),
-                      child: Text(_libelleEtat(etat), style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                          color: couleur,
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text(_libelleEtat(etat),
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),
-            if (capteurs.isNotEmpty && capteurs[0]['dernier_ph'] != null) ...[
-            const SizedBox(height: 16),
-            const Text('Analyse du sol', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: _carteValeur(icone: Icons.science_outlined, couleur: Colors.purple, label: 'pH', valeur: '${capteurs[0]['dernier_ph']}')),
-                const SizedBox(width: 8),
-                Expanded(child: _carteValeur(icone: Icons.grain, couleur: Colors.brown, label: 'N', valeur: '${capteurs[0]['dernier_azote_ppm'] ?? '—'}')),
-                const SizedBox(width: 8),
-                Expanded(child: _carteValeur(icone: Icons.grain, couleur: Colors.orange, label: 'P', valeur: '${capteurs[0]['dernier_phosphore_ppm'] ?? '—'}')),
-                const SizedBox(width: 8),
-                Expanded(child: _carteValeur(icone: Icons.grain, couleur: Colors.indigo, label: 'K', valeur: '${capteurs[0]['dernier_potassium_ppm'] ?? '—'}')),
-              ],
-            ),
-            if (capteurs[0]['conseil_fertilisation'] != null) ...[
-              const SizedBox(height: 8),
-              ...((capteurs[0]['conseil_fertilisation'] as List).map((c) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('• $c', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
-                  ))),
-            ],
-          ],
               );
             }),
-
           const SizedBox(height: 16),
-          const Text('Conditions actuelles', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          const Text('Conditions actuelles',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           if (capteurs.isEmpty)
             _cartePasDeDonnees()
@@ -354,7 +362,56 @@ class _ZoneTuile extends StatelessWidget {
                 ),
               ],
             ),
-
+          if (capteurs.isNotEmpty && capteurs[0]['dernier_ph'] != null) ...[
+            const SizedBox(height: 16),
+            const Text('Analyse du sol',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                    child: _carteValeur(
+                        icone: Icons.science_outlined,
+                        couleur: Colors.purple,
+                        label: 'pH',
+                        valeur: '${capteurs[0]['dernier_ph']}')),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: _carteValeur(
+                        icone: Icons.grain,
+                        couleur: Colors.brown,
+                        label: 'N',
+                        valeur: '${capteurs[0]['dernier_azote_ppm'] ?? '—'}')),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: _carteValeur(
+                        icone: Icons.grain,
+                        couleur: Colors.orange,
+                        label: 'P',
+                        valeur:
+                            '${capteurs[0]['dernier_phosphore_ppm'] ?? '—'}')),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: _carteValeur(
+                        icone: Icons.grain,
+                        couleur: Colors.indigo,
+                        label: 'K',
+                        valeur:
+                            '${capteurs[0]['dernier_potassium_ppm'] ?? '—'}')),
+              ],
+            ),
+            if (capteurs[0]['conseil_fertilisation'] != null) ...[
+              const SizedBox(height: 8),
+              ...((capteurs[0]['conseil_fertilisation'] as List)
+                  .map((c) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('• $c',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.texteSecondaire)),
+                      ))),
+            ],
+          ],
           const SizedBox(height: 16),
           _BlocDecision(zoneId: zone['id']),
           _CourbeComparaison(zoneId: zone['id']),
@@ -363,7 +420,11 @@ class _ZoneTuile extends StatelessWidget {
     );
   }
 
-  Widget _carteValeur({required IconData icone, required Color couleur, required String label, required String valeur}) {
+  Widget _carteValeur(
+      {required IconData icone,
+      required Color couleur,
+      required String label,
+      required String valeur}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
@@ -374,9 +435,13 @@ class _ZoneTuile extends StatelessWidget {
         children: [
           Icon(icone, color: couleur, size: 22),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: AppColors.texteSecondaire)),
           const SizedBox(height: 2),
-          Text(valeur, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: couleur)),
+          Text(valeur,
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: couleur)),
         ],
       ),
     );
@@ -386,8 +451,10 @@ class _ZoneTuile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-      child: const Text('Pas de donnees capteurs', style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+      decoration: BoxDecoration(
+          color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+      child: const Text('Pas de donnees capteurs',
+          style: TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
     );
   }
 }
@@ -430,7 +497,8 @@ class _BlocDecisionState extends State<_BlocDecision> {
         timer.cancel();
         return;
       }
-      setState(() => _tempsRestant = restant.isNegative ? Duration.zero : restant);
+      setState(
+          () => _tempsRestant = restant.isNegative ? Duration.zero : restant);
     });
   }
 
@@ -442,17 +510,23 @@ class _BlocDecisionState extends State<_BlocDecision> {
 
   Color _couleurDecision(String decision) {
     switch (decision) {
-      case 'oui': return AppColors.bleuEau;
-      case 'non': return AppColors.vertPrincipal;
-      default: return AppColors.texteSecondaire;
+      case 'oui':
+        return AppColors.bleuEau;
+      case 'non':
+        return AppColors.vertPrincipal;
+      default:
+        return AppColors.texteSecondaire;
     }
   }
 
   String _libelleDecision(String decision) {
     switch (decision) {
-      case 'oui': return 'ARROSER';
-      case 'non': return 'PAS BESOIN';
-      default: return 'INDISPONIBLE';
+      case 'oui':
+        return 'ARROSER';
+      case 'non':
+        return 'PAS BESOIN';
+      default:
+        return 'INDISPONIBLE';
     }
   }
 
@@ -468,7 +542,9 @@ class _BlocDecisionState extends State<_BlocDecision> {
       future: _decisionFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const SizedBox(height: 60, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+          return const SizedBox(
+              height: 60,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
         }
         final data = snapshot.data!;
         final decision = data['decision'] ?? 'indisponible';
@@ -485,23 +561,35 @@ class _BlocDecisionState extends State<_BlocDecision> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('DECISION', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1)),
+              const Text('DECISION',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1)),
               const SizedBox(height: 4),
               Text(
                 _libelleDecision(decision),
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: couleur, letterSpacing: 0.5),
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: couleur,
+                    letterSpacing: 0.5),
               ),
               const SizedBox(height: 10),
-
               if (data['phase'] != null)
                 Text(
                   'Phase : ${data['phase']} — besoin en eau : ${data['etc_mm']?.toStringAsFixed(1) ?? '—'}mm/jour',
-                  style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.texteSecondaire),
                 ),
               const SizedBox(height: 4),
               Text(
                 data['explication'] ?? '',
-                style: const TextStyle(fontSize: 14, color: AppColors.texteSecondaire, fontWeight: FontWeight.w500, height: 1.4),
+                style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.texteSecondaire,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4),
               ),
               if (_tempsRestant != null && _delaiTotalSecondes != null) ...[
                 const SizedBox(height: 18),
@@ -514,9 +602,9 @@ class _BlocDecisionState extends State<_BlocDecision> {
                   ),
                 ),
               ],
-
               const SizedBox(height: 16),
-              const Text('Meteo (14 prochains jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const Text('Meteo (14 prochains jours)',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               SizedBox(
                 height: 64,
@@ -531,33 +619,53 @@ class _BlocDecisionState extends State<_BlocDecision> {
                     return Container(
                       width: 48,
                       padding: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10)),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(date != null ? '${date.day}/${date.month}' : '', style: const TextStyle(fontSize: 9, color: AppColors.texteSecondaire)),
+                          Text(date != null ? '${date.day}/${date.month}' : '',
+                              style: const TextStyle(
+                                  fontSize: 9,
+                                  color: AppColors.texteSecondaire)),
                           const SizedBox(height: 2),
-                          Icon(pluie > 1 ? Icons.cloud : Icons.wb_sunny_outlined, size: 16, color: pluie > 1 ? AppColors.bleuEau : AppColors.alerte),
+                          Icon(
+                              pluie > 1 ? Icons.cloud : Icons.wb_sunny_outlined,
+                              size: 16,
+                              color: pluie > 1
+                                  ? AppColors.bleuEau
+                                  : AppColors.alerte),
                           const SizedBox(height: 2),
-                          Text('${pluie.toStringAsFixed(0)}mm', style: const TextStyle(fontSize: 9)),
+                          Text('${pluie.toStringAsFixed(0)}mm',
+                              style: const TextStyle(fontSize: 9)),
                         ],
                       ),
                     );
                   },
                 ),
               ),
-              if ((data['prediction_humidite'] as List?)?.isNotEmpty == true) ...[
+              if ((data['prediction_humidite'] as List?)?.isNotEmpty ==
+                  true) ...[
                 const SizedBox(height: 12),
-                const Text('Prediction humidite (5 jours)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                const Text('Prediction humidite (5 jours)',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 Row(
-                  children: (data['prediction_humidite'] as List).map<Widget>((p) {
+                  children:
+                      (data['prediction_humidite'] as List).map<Widget>((p) {
                     return Expanded(
                       child: Column(
                         children: [
-                          Text('J+${p['jour']}', style: const TextStyle(fontSize: 10, color: AppColors.texteSecondaire)),
+                          Text('J+${p['jour']}',
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.texteSecondaire)),
                           const SizedBox(height: 4),
-                          Text('${p['humidite_projetee_pct']}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('${p['humidite_projetee_pct']}%',
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w600)),
                         ],
                       ),
                     );
@@ -616,7 +724,10 @@ class _CercleDecompte extends StatelessWidget {
                 children: [
                   Text(
                     formatDuree(tempsRestant),
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: couleurAffichee),
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: couleurAffichee),
                   ),
                   Text(
                     termine ? 'declenchement...' : 'avant auto',
@@ -654,12 +765,20 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
     return FutureBuilder<List<dynamic>>(
       future: _future,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+        if (!snapshot.hasData)
+          return const SizedBox(
+              height: 100,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
         final donnees = snapshot.data!;
 
-        final maxSysteme = donnees.map((d) => (d['volume_systeme_l'] as num).toDouble()).fold(0.0, (a, b) => a > b ? a : b);
-        final maxClassique = donnees.map((d) => (d['volume_classique_l'] as num).toDouble()).fold(0.0, (a, b) => a > b ? a : b);
-        final maxY = (maxSysteme > maxClassique ? maxSysteme : maxClassique) * 1.2 + 1;
+        final maxSysteme = donnees
+            .map((d) => (d['volume_systeme_l'] as num).toDouble())
+            .fold(0.0, (a, b) => a > b ? a : b);
+        final maxClassique = donnees
+            .map((d) => (d['volume_classique_l'] as num).toDouble())
+            .fold(0.0, (a, b) => a > b ? a : b);
+        final maxY =
+            (maxSysteme > maxClassique ? maxSysteme : maxClassique) * 1.2 + 1;
 
         return Container(
           width: double.infinity,
@@ -673,9 +792,12 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('SmartWater vs Arrosage classique', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              const Text('SmartWater vs Arrosage classique',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               const SizedBox(height: 2),
-              Text('Volume d\'eau utilise par jour (litres)', style: TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
+              Text('Volume d\'eau utilise par jour (litres)',
+                  style: TextStyle(
+                      fontSize: 11, color: AppColors.texteSecondaire)),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -695,12 +817,15 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
                       show: true,
                       drawVerticalLine: false,
                       horizontalInterval: maxY / 4,
-                      getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+                      getDrawingHorizontalLine: (value) =>
+                          FlLine(color: Colors.grey.shade100, strokeWidth: 1),
                     ),
                     borderData: FlBorderData(show: false),
                     titlesData: FlTitlesData(
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
@@ -708,7 +833,8 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
                           interval: maxY / 4 == 0 ? 1 : maxY / 4,
                           getTitlesWidget: (value, meta) => Text(
                             value.toStringAsFixed(0),
-                            style: const TextStyle(fontSize: 9, color: AppColors.texteSecondaire),
+                            style: const TextStyle(
+                                fontSize: 9, color: AppColors.texteSecondaire),
                           ),
                         ),
                       ),
@@ -716,15 +842,22 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 22,
-                          interval: (donnees.length / 4).ceilToDouble().clamp(1, double.infinity),
+                          interval: (donnees.length / 4)
+                              .ceilToDouble()
+                              .clamp(1, double.infinity),
                           getTitlesWidget: (value, meta) {
                             final i = value.toInt();
-                            if (i < 0 || i >= donnees.length) return const SizedBox.shrink();
-                            final date = DateTime.tryParse(donnees[i]['date'] ?? '');
+                            if (i < 0 || i >= donnees.length)
+                              return const SizedBox.shrink();
+                            final date =
+                                DateTime.tryParse(donnees[i]['date'] ?? '');
                             if (date == null) return const SizedBox.shrink();
                             return Padding(
                               padding: const EdgeInsets.only(top: 4),
-                              child: Text('${date.day}/${date.month}', style: const TextStyle(fontSize: 9, color: AppColors.texteSecondaire)),
+                              child: Text('${date.day}/${date.month}',
+                                  style: const TextStyle(
+                                      fontSize: 9,
+                                      color: AppColors.texteSecondaire)),
                             );
                           },
                         ),
@@ -734,7 +867,10 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
                       LineChartBarData(
                         spots: [
                           for (int i = 0; i < donnees.length; i++)
-                            FlSpot(i.toDouble(), (donnees[i]['volume_classique_l'] as num).toDouble()),
+                            FlSpot(
+                                i.toDouble(),
+                                (donnees[i]['volume_classique_l'] as num)
+                                    .toDouble()),
                         ],
                         isCurved: false,
                         color: Colors.grey.shade400,
@@ -744,7 +880,10 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
                       LineChartBarData(
                         spots: [
                           for (int i = 0; i < donnees.length; i++)
-                            FlSpot(i.toDouble(), (donnees[i]['volume_systeme_l'] as num).toDouble()),
+                            FlSpot(
+                                i.toDouble(),
+                                (donnees[i]['volume_systeme_l'] as num)
+                                    .toDouble()),
                         ],
                         isCurved: false,
                         color: AppColors.vertPrincipal,
@@ -768,7 +907,9 @@ class _CourbeComparaisonState extends State<_CourbeComparaison> {
       children: [
         Container(width: 10, height: 3, color: couleur),
         const SizedBox(width: 4),
-        Text(texte, style: const TextStyle(fontSize: 11, color: AppColors.texteSecondaire)),
+        Text(texte,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.texteSecondaire)),
       ],
     );
   }

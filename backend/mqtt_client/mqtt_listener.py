@@ -191,8 +191,6 @@ def on_message(client, userdata, msg):
             )
 
     elif canal == 'capteurs_differe':
-        # Synchronisation des mesures accumulees pendant une coupure reseau.
-        # On reconstitue l'horodatage reel a partir de "il_y_a_secondes".
         maintenant = timezone.now()
         for lecture in payload:
             il_y_a = lecture.get('il_y_a_secondes', 0)
