@@ -66,7 +66,9 @@ class DeviceAdmin(admin.ModelAdmin):
 @admin.register(Capteur)
 class CapteurAdmin(admin.ModelAdmin):
     list_display = ('type_capteur', 'zone', 'derniere_humidite_pct', 'derniere_lecture')
-    fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c', 'statut_maintenance')
+    fields = ('device', 'zone', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c',
+               'dernier_ph', 'dernier_azote_ppm', 'dernier_phosphore_ppm', 'dernier_potassium_ppm',
+               'statut_maintenance')
 
     def save_model(self, request, obj, form, change):
         if obj.type_capteur == 'humidite_temperature' and obj.derniere_humidite_pct is not None:

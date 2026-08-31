@@ -142,6 +142,8 @@ class Culture(models.Model):
     seuil_humidite_max_pct = models.FloatField(
         default=70.0, help_text="Au dessus, le sol est considere gorge d'eau"
     )
+    ph_min = models.FloatField(null=True, blank=True, help_text="pH minimum acceptable pour cette culture")
+    ph_max = models.FloatField(null=True, blank=True, help_text="pH maximum acceptable pour cette culture")
 
     def save(self, *args, **kwargs):
         # Remplit automatiquement les Kc si le nom correspond a une
@@ -221,10 +223,15 @@ class Device(models.Model):
 
 
 class Capteur(models.Model):
-    """Un capteur physique rattache a un device (SEN0600 ou AS7265x)."""
+    """Un capteur physique rattache a un device.
+
+    Le capteur sol (type 'humidite_temperature') peut etre un simple
+    capteur H/T, ou un capteur complet "5 broches" mesurant aussi
+    pH/N/P/K -- les champs pH/N/P/K restent optionnels (null=True) et
+    le systeme fonctionne parfaitement avec ou sans eux."""
 
     TYPE_CHOICES = [
-        ('humidite_temperature', "Humidite + temperature (SEN0600)"),
+        ('humidite_temperature', "Humidite + temperature (+ pH/NPK si disponible)"),
         ('spectral_phenologique', "Spectral - phase phenologique (AS7265x)"),
     ]
 
@@ -239,6 +246,14 @@ class Capteur(models.Model):
         help_text="Coche manuellement si ce capteur est en cours de nettoyage/reparation."
     )
 
+    # Donnees du capteur sol complet -- optionnelles, le systeme
+    # fonctionne parfaitement si elles restent vides (materiel pas
+    # encore disponible chez le GE au moment du developpement).
+    dernier_ph = models.FloatField(null=True, blank=True)
+    dernier_azote_ppm = models.FloatField(null=True, blank=True, help_text="Azote (N)")
+    dernier_phosphore_ppm = models.FloatField(null=True, blank=True, help_text="Phosphore (P)")
+    dernier_potassium_ppm = models.FloatField(null=True, blank=True, help_text="Potassium (K)")
+
     def __str__(self):
         return f"{self.get_type_capteur_display()} - {self.zone.nom}"
 
@@ -247,12 +262,12 @@ class Capteur(models.Model):
         Determine l'etat du capteur : 'maintenance', 'aucune_donnee',
         'defaillant', ou 'normal'.
 
-        Logique de detection de panne (point 1 de la liste validee) :
-        - Aucune lecture jamais recue -> 'aucune_donnee'
-        - Pas de nouvelle lecture depuis plus de 48h -> 'defaillant'
-        - Les 3 dernieres lectures (sur 48h) ont exactement la meme
-          valeur d'humidite -> 'defaillant' (valeur figee anormale)
-        - Sinon -> 'normal'
+        Regles validees ensemble :
+        - Valeur invalide (0, ou hors plage physiquement realiste :
+          humidite <0% ou >100%, temperature <-10C ou >60C) -> defaillant
+        - Valeur figee (strictement identique) sur les lectures des
+          dernieres 24h -> defaillant
+        - Aucune lecture jamais recue -> aucune_donnee
         """
         if self.statut_maintenance:
             return 'maintenance'
@@ -260,57 +275,61 @@ class Capteur(models.Model):
         if not self.derniere_lecture:
             return 'aucune_donnee'
 
+        humidite = self.derniere_humidite_pct
+        temperature = self.derniere_temperature_c
+
+        if humidite is not None and (humidite <= 0 or humidite > 100):
+            return 'defaillant'
+        if temperature is not None and (temperature < -10 or temperature > 60):
+            return 'defaillant'
+
         from django.utils import timezone
         from datetime import timedelta
 
-        if self.derniere_lecture < timezone.now() - timedelta(hours=48):
-            return 'defaillant'
-
-        lectures_recentes = list(
+        lectures_24h = list(
             self.lectures.filter(
-                horodatage__gte=timezone.now() - timedelta(hours=48)
-            ).order_by('-horodatage')[:3]
+                horodatage__gte=timezone.now() - timedelta(hours=24)
+            ).order_by('-horodatage')
         )
-        if len(lectures_recentes) >= 3:
-            valeurs = [l.humidite_pct for l in lectures_recentes]
-            if len(set(valeurs)) == 1:
+        if len(lectures_24h) >= 3:
+            valeurs = [l.humidite_pct for l in lectures_24h if l.humidite_pct is not None]
+            if len(valeurs) >= 3 and len(set(valeurs)) == 1:
                 return 'defaillant'
 
         return 'normal'
 
-    def generer_alerte_si_besoin(self):
-        """Cree une Alerte si necessaire, ou resout les alertes existantes
-        si l'etat redevient normal."""
-        from .models import Alerte
+    def a_donnees_sol_completes(self):
+        """True si ce capteur fournit vraiment pH/N/P/K (pas juste H/T)."""
+        return self.dernier_ph is not None
 
-        etat = self.etat_sante()
+    def conseil_fertilisation(self):
+        """
+        Genere un conseil textuel simple a partir du pH/NPK, si
+        disponible. Retourne None si les donnees ne sont pas la --
+        le systeme continue de fonctionner normalement sans ce conseil.
+        """
+        if not self.a_donnees_sol_completes():
+            return None
 
-        if etat in ('defaillant', 'maintenance'):
-            deja_existe = Alerte.objects.filter(
-                device=self.device, type_alerte='panne_capteur', envoyee=False
-            ).exists()
-            if deja_existe:
-                return
+        conseils = []
+        culture = self.zone.culture
 
-            if etat == 'defaillant':
-                message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} semble en panne (valeur figee ou pas de nouvelle donnee)."
-            else:
-                message = f"Le capteur {self.get_type_capteur_display()} de la zone {self.zone.nom} est en maintenance."
+        if self.dernier_ph is not None and culture.ph_min is not None and culture.ph_max is not None:
+            if self.dernier_ph < culture.ph_min:
+                conseils.append(f"pH trop acide ({self.dernier_ph}) pour {culture.nom} -- peut limiter l'absorption d'eau et de nutriments.")
+            elif self.dernier_ph > culture.ph_max:
+                conseils.append(f"pH trop alcalin ({self.dernier_ph}) pour {culture.nom} -- peut limiter l'absorption d'eau et de nutriments.")
 
-            Alerte.objects.create(
-                zone=self.zone,
-                device=self.device,
-                type_alerte='panne_capteur',
-                message=message,
-                canal='push',
-            )
-        else:
-            # Etat redevenu normal -> on marque les anciennes alertes
-            # comme resolues (envoyee=True), pour qu'elles disparaissent
-            # de l'affichage.
-            Alerte.objects.filter(
-                device=self.device, type_alerte='panne_capteur', envoyee=False
-            ).update(envoyee=True)
+        # Seuils generiques indicatifs (ppm) -- a ajuster avec l'agronome
+        # selon retours terrain.
+        if self.dernier_azote_ppm is not None and self.dernier_azote_ppm < 20:
+            conseils.append("Azote (N) faible -- envisager un apport.")
+        if self.dernier_phosphore_ppm is not None and self.dernier_phosphore_ppm < 15:
+            conseils.append("Phosphore (P) faible -- envisager un apport.")
+        if self.dernier_potassium_ppm is not None and self.dernier_potassium_ppm < 20:
+            conseils.append("Potassium (K) faible -- envisager un apport.")
+
+        return conseils if conseils else ["Sol equilibre (pH et NPK dans les normes)."]
 
 
 class LectureCapteur(models.Model):

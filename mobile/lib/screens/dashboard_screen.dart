@@ -297,6 +297,29 @@ class _ZoneTuile extends StatelessWidget {
                     ),
                   ],
                 ),
+            if (capteurs.isNotEmpty && capteurs[0]['dernier_ph'] != null) ...[
+            const SizedBox(height: 16),
+            const Text('Analyse du sol', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _carteValeur(icone: Icons.science_outlined, couleur: Colors.purple, label: 'pH', valeur: '${capteurs[0]['dernier_ph']}')),
+                const SizedBox(width: 8),
+                Expanded(child: _carteValeur(icone: Icons.grain, couleur: Colors.brown, label: 'N', valeur: '${capteurs[0]['dernier_azote_ppm'] ?? '—'}')),
+                const SizedBox(width: 8),
+                Expanded(child: _carteValeur(icone: Icons.grain, couleur: Colors.orange, label: 'P', valeur: '${capteurs[0]['dernier_phosphore_ppm'] ?? '—'}')),
+                const SizedBox(width: 8),
+                Expanded(child: _carteValeur(icone: Icons.grain, couleur: Colors.indigo, label: 'K', valeur: '${capteurs[0]['dernier_potassium_ppm'] ?? '—'}')),
+              ],
+            ),
+            if (capteurs[0]['conseil_fertilisation'] != null) ...[
+              const SizedBox(height: 8),
+              ...((capteurs[0]['conseil_fertilisation'] as List).map((c) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $c', style: const TextStyle(fontSize: 12, color: AppColors.texteSecondaire)),
+                  ))),
+            ],
+          ],
               );
             }),
 

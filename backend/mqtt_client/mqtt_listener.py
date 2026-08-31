@@ -103,10 +103,14 @@ def on_connect(client, userdata, flags, rc):
         print(f"[MQTT] Echec de connexion, code {rc}")
 
 
-def _traiter_lecture(device, zone_code, humidite_pct, temperature_c, horodatage=None):
+def _traiter_lecture(device, zone_code, humidite_pct, temperature_c, extra=None, horodatage=None):
     """Enregistre une lecture pour la zone correspondant a zone_code, et
     declenche le moteur de decision. Reutilise pour le temps reel ET
-    pour la synchronisation differee (mode hors-ligne)."""
+    pour la synchronisation differee (mode hors-ligne).
+
+    'extra' est un dict optionnel pouvant contenir ph/azote_ppm/
+    phosphore_ppm/potassium_ppm -- le systeme fonctionne parfaitement
+    si ces cles sont absentes (capteur sol basique, pas le modele complet)."""
     django.setup()
     from core.models import Capteur, LectureCapteur, Zone
     from irrigation.decision_engine import prendre_decision
@@ -124,6 +128,19 @@ def _traiter_lecture(device, zone_code, humidite_pct, temperature_c, horodatage=
 
     capteur.derniere_humidite_pct = humidite_pct
     capteur.derniere_temperature_c = temperature_c
+
+    if extra:
+        if 'ph' in extra:
+            capteur.dernier_ph = extra.get('ph')
+        if 'azote_ppm' in extra:
+            capteur.dernier_azote_ppm = extra.get('azote_ppm')
+        if 'phosphore_ppm' in extra:
+            capteur.dernier_phosphore_ppm = extra.get('phosphore_ppm')
+        if 'potassium_ppm' in extra:
+            capteur.dernier_potassium_ppm = extra.get('potassium_ppm')
+
+    from django.utils import timezone
+    capteur.derniere_lecture = timezone.now()
     capteur.save()
 
     LectureCapteur.objects.create(
@@ -131,7 +148,7 @@ def _traiter_lecture(device, zone_code, humidite_pct, temperature_c, horodatage=
         humidite_pct=humidite_pct,
         temperature_c=temperature_c,
     )
-    capteur.generer_alerte_si_besoin()
+
     if humidite_pct is not None:
         prendre_decision(zone, humidite_pct=humidite_pct, temperature_c=temperature_c or 28.0)
 
@@ -166,9 +183,11 @@ def on_message(client, userdata, msg):
 
         # payload attendu : tableau [{"zone_code": "Z1", "humidite_pct":.., "temperature_c":..}, ...]
         for lecture in payload:
+            extra = {k: v for k, v in lecture.items() if k in ('ph', 'azote_ppm', 'phosphore_ppm', 'potassium_ppm')}
             _traiter_lecture(
                 device, lecture.get('zone_code'),
                 lecture.get('humidite_pct'), lecture.get('temperature_c'),
+                extra=extra if extra else None,
             )
 
     elif canal == 'capteurs_differe':

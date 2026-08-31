@@ -30,14 +30,19 @@ class VanneSerializer(serializers.ModelSerializer):
 
 class CapteurSerializer(serializers.ModelSerializer):
     etat = serializers.SerializerMethodField()
+    conseil_fertilisation = serializers.SerializerMethodField()
 
     class Meta:
         model = Capteur
         fields = ('id', 'type_capteur', 'derniere_humidite_pct', 'derniere_temperature_c',
-                   'derniere_lecture', 'etat')
+                   'derniere_lecture', 'etat', 'dernier_ph', 'dernier_azote_ppm',
+                   'dernier_phosphore_ppm', 'dernier_potassium_ppm', 'conseil_fertilisation')
 
     def get_etat(self, obj):
         return obj.etat_sante()
+
+    def get_conseil_fertilisation(self, obj):
+        return obj.conseil_fertilisation()
 
 class ZoneSerializer(serializers.ModelSerializer):
     culture = CultureSerializer(read_only=True)
