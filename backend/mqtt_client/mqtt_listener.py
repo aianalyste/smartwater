@@ -191,11 +191,6 @@ def on_message(client, userdata, msg):
 
 
 def envoyer_commande_vanne(zone, ouverture: bool, duree_minutes: float = None):
-    """
-    Publie une commande MQTT pour ouvrir/fermer la vanne d'une zone.
-    Le payload inclut zone_code pour que l'ESP32 sache quelle vanne
-    physique actionner (un device peut en piloter plusieurs).
-    """
     try:
         vanne = zone.vanne
         device = vanne.device
@@ -216,10 +211,15 @@ def envoyer_commande_vanne(zone, ouverture: bool, duree_minutes: float = None):
     client.publish(f"smartwater/{device.identifiant}/commande", payload)
     client.disconnect()
 
-    vanne.etat = 'ouverte' if ouverture else 'fermee'
     from django.utils import timezone
+    from datetime import timedelta
+
+    vanne.etat = 'ouverte' if ouverture else 'fermee'
     if ouverture:
         vanne.derniere_ouverture = timezone.now()
+        vanne.fermeture_prevue = timezone.now() + timedelta(minutes=duree_minutes) if duree_minutes else None
+    else:
+        vanne.fermeture_prevue = None
     vanne.save()
 
 

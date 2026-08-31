@@ -110,7 +110,6 @@ def prendre_decision(zone: Zone, humidite_pct: float, temperature_c: float) -> D
 
     # A CONNECTER : declencher reellement la vanne via MQTT ici.
     # Voir mqtt_client/mqtt_listener.py -> fonction envoyer_commande_vanne()
-    from mqtt_client.mqtt_listener import envoyer_commande_vanne
-    envoyer_commande_vanne(zone, ouverture=True, duree_minutes=duree_min)
+    
 
     return decision

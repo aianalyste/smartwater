@@ -342,6 +342,7 @@ class Vanne(models.Model):
                    "A VERIFIER sur la fiche technique du fabricant, cette valeur est une estimation."
     )
     derniere_ouverture = models.DateTimeField(null=True, blank=True)
+    fermeture_prevue = models.DateTimeField(null=True, blank=True, help_text="Calculee automatiquement : ouverture + duree")
 
     def __str__(self):
         return f"Vanne {self.zone.nom} - {self.etat}"

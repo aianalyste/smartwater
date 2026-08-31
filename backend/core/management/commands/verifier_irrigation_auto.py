@@ -64,4 +64,15 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS(f"Irrigation auto declenchee pour {zone.nom}"))
 
+        # --- Fermeture automatique des vannes dont la duree est ecoulee ---
+        from core.models import Vanne
+
+        vannes_a_fermer = Vanne.objects.filter(etat='ouverte', fermeture_prevue__lte=timezone.now())
+        for vanne in vannes_a_fermer:
+            from mqtt_client.mqtt_listener import envoyer_commande_vanne
+            envoyer_commande_vanne(vanne.zone, ouverture=False)
+            self.stdout.write(self.style.SUCCESS(f"Vanne fermee automatiquement pour {vanne.zone.nom}"))
+
+        self.stdout.write(f"Fermeture : {vannes_a_fermer.count()} vanne(s) verifiee(s).")
+
         self.stdout.write(f"Verification terminee : {decisions_en_attente.count()} decision(s) examinee(s).")
