@@ -393,7 +393,10 @@ class _ZoneTuile extends StatelessWidget {
                 ),
               ],
             ),
-          if (capteurs.isNotEmpty && capteurs[0]['dernier_ph'] != null) ...[
+          if (capteurs.isNotEmpty &&
+              capteurs[0]['dernier_ph'] != null &&
+              capteurs[0]['dernier_ph'] >= 0 &&
+              capteurs[0]['dernier_ph'] <= 14) ...[
             const SizedBox(height: 16),
             const Text('Analyse du sol',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
