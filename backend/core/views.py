@@ -82,6 +82,9 @@ def decision_actuelle(request, zone_id):
         decision = 'non'
         explication = derniere_decision.explication if derniere_decision else "Humidite suffisante, pas d'irrigation necessaire."
 
+    from irrigation.water_savings import estimer_volume_irrigation
+    volume_estime_l, duree_estimee_min = estimer_volume_irrigation(zone, etc_mm)
+
     return Response({
         'capteurs': capteurs_data,
         'phase': phase,
@@ -93,6 +96,8 @@ def decision_actuelle(request, zone_id):
         'explication': explication,
         'date_decision': date_decision_iso,
         'delai_auto_secondes': delai_auto_secondes,
+        'volume_estime_l': volume_estime_l,
+        'duree_estimee_min': duree_estimee_min,
     })
 
 

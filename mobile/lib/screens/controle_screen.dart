@@ -12,8 +12,9 @@ class ControleScreen extends StatefulWidget {
 
 class _ControleScreenState extends State<ControleScreen> {
   late Future<List<dynamic>> _parcellesFuture;
-  double _volumePct = 50;
+  double _volumeL = 45;
   double _dureeMinutes = 20;
+  bool _valeursChargees = false;
   String? _messageStatut;
 
   @override
@@ -28,11 +29,29 @@ class _ControleScreenState extends State<ControleScreen> {
     });
   }
 
+  Future<void> _chargerPredictionIA(int zoneId) async {
+    if (_valeursChargees) return;
+    try {
+      final decision = await ApiService.getDecision(zoneId);
+      final volume = decision['volume_estime_l'];
+      final duree = decision['duree_estimee_min'];
+      if (mounted && volume != null && duree != null) {
+        setState(() {
+          _volumeL = (volume as num).toDouble().clamp(5, 300);
+          _dureeMinutes = (duree as num).toDouble().clamp(5, 90);
+          _valeursChargees = true;
+        });
+      }
+    } catch (e) {
+      // Pas de prediction disponible -- on garde les valeurs par defaut
+    }
+  }
+
   Future<void> _demarrer(int zoneId, String nomZone) async {
     try {
       await ApiService.demarrerIrrigationManuelle(zoneId, _dureeMinutes);
       setState(() {
-        _messageStatut = 'Irrigation demarree sur $nomZone : ${_volumePct.toStringAsFixed(0)}% pendant ${_dureeMinutes.toStringAsFixed(0)} min';
+        _messageStatut = 'Irrigation demarree sur $nomZone : ${_volumeL.toStringAsFixed(0)}L pendant ${_dureeMinutes.toStringAsFixed(0)} min';
       });
       _rafraichir();
     } catch (e) {
@@ -64,6 +83,9 @@ class _ControleScreenState extends State<ControleScreen> {
           }
 
           final zones = parcelles[0]['zones'] as List<dynamic>;
+          if (zones.isNotEmpty) {
+            _chargerPredictionIA(zones[0]['id']);
+          }
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -105,23 +127,32 @@ class _ControleScreenState extends State<ControleScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Arrosage manuel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    if (_valeursChargees)
+                      Row(
+                        children: [
+                          const Icon(Icons.auto_awesome, size: 14, color: AppColors.vertPrincipal),
+                          const SizedBox(width: 4),
+                          Text('Valeurs predites par l\'IA', style: TextStyle(fontSize: 11, color: AppColors.vertPrincipal, fontStyle: FontStyle.italic)),
+                        ],
+                      ),
                     const SizedBox(height: 16),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Volume', style: TextStyle(fontSize: 13, color: AppColors.texteSecondaire)),
-                        Text('${_volumePct.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.vertPrincipal)),
+                        Text('${_volumeL.toStringAsFixed(0)} L', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.vertPrincipal)),
                       ],
                     ),
                     Slider(
-                      value: _volumePct,
-                      min: 10,
-                      max: 100,
-                      divisions: 18,
+                      value: _volumeL,
+                      min: 5,
+                      max: 300,
+                      divisions: 59,
                       activeColor: AppColors.vertPrincipal,
-                      label: '${_volumePct.toStringAsFixed(0)}%',
-                      onChanged: (v) => setState(() => _volumePct = v),
+                      label: '${_volumeL.toStringAsFixed(0)} L',
+                      onChanged: (v) => setState(() => _volumeL = v),
                     ),
 
                     const SizedBox(height: 8),
@@ -135,8 +166,8 @@ class _ControleScreenState extends State<ControleScreen> {
                     Slider(
                       value: _dureeMinutes,
                       min: 5,
-                      max: 60,
-                      divisions: 11,
+                      max: 90,
+                      divisions: 17,
                       activeColor: AppColors.vertPrincipal,
                       label: '${_dureeMinutes.toStringAsFixed(0)} min',
                       onChanged: (v) => setState(() => _dureeMinutes = v),
