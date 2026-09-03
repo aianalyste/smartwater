@@ -261,13 +261,17 @@ def envoyer_commande_vanne(zone, ouverture: bool, duree_minutes: float = None):
     client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_PASSWORD)
     client.tls_set()
     client.connect(settings.MQTT_BROKER_HOST, settings.MQTT_BROKER_PORT)
+    client.loop_start()  # demarre la boucle reseau, necessaire pour envoyer reellement
 
     payload = json.dumps({
         'zone_code': zone.code_terrain,
         'vanne': 'ouvrir' if ouverture else 'fermer',
         'duree_minutes': duree_minutes,
     })
-    client.publish(f"smartwater/{device.identifiant}/commande", payload)
+    resultat = client.publish(f"smartwater/{device.identifiant}/commande", payload, qos=1)
+    resultat.wait_for_publish(timeout=5)  # attend la confirmation reelle d'envoi
+
+    client.loop_stop()
     client.disconnect()
 
     from django.utils import timezone
